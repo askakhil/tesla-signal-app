@@ -1,0 +1,134 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#0b1220">
+<title>Faraday — Charge + Trip Tracker</title>
+<style>
+  :root{--bg:#0b1220;--card:rgba(255,255,255,.08);--text:#f5f7ff;--muted:#aab3c7;--blue:#4da3ff;--purple:#8b7bff;--green:#34d399;--amber:#fbbf24}
+  *{box-sizing:border-box}
+  body{margin:0;min-height:100vh;color:var(--text);font-family:-apple-system,BlinkMacSystemFont,"SF Pro Text",Segoe UI,Roboto,Helvetica,Arial,sans-serif;background:radial-gradient(900px 500px at 50% -10%,#24365e 0%,var(--bg) 55%);padding:18px 14px 32px}
+  .wrap{max-width:560px;margin:0 auto}
+  header{display:flex;justify-content:space-between;align-items:flex-start;gap:12px}
+  h1{font-size:20px;margin:0;line-height:1.15}
+  p{color:var(--muted);line-height:1.5}
+  .sub{font-size:13px;margin:4px 0 0}
+  .badge{flex:none;font-size:11px;font-weight:800;letter-spacing:.06em;text-transform:uppercase;padding:8px 11px;border-radius:999px;color:#101010;background:linear-gradient(180deg,#ffe9a3,#f59e0b);box-shadow:0 8px 20px rgba(245,158,11,.35),inset 0 1px 0 rgba(255,255,255,.7)}
+  .beta-note{margin:14px 0;padding:12px 14px;border-radius:16px;background:rgba(251,191,36,.14);border:1px solid rgba(251,191,36,.35);font-size:13px;line-height:1.5}
+  .beta-note strong{color:#fde68a}
+  .grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin:14px 0}
+  .card{background:var(--card);border:1px solid rgba(255,255,255,.12);border-radius:22px;padding:14px 16px;box-shadow:0 10px 24px rgba(0,0,0,.25),inset 0 1px 0 rgba(255,255,255,.15)}
+  .card label{display:block;color:var(--muted);font-size:11px;letter-spacing:.08em;text-transform:uppercase}
+  .card strong{display:block;font-size:26px;margin-top:4px;font-variant-numeric:tabular-nums}
+  .card span{color:var(--muted);font-size:12px}
+  .card.wide{grid-column:1/-1}
+  form.card{display:block}
+  form label{display:block;color:var(--muted);font-size:12px;font-weight:700;margin:12px 0 5px}
+  input{width:100%;padding:13px 12px;border-radius:14px;border:1px solid rgba(255,255,255,.18);background:rgba(255,255,255,.08);color:var(--text);font-size:16px}
+  input::placeholder{color:#8b94a8}
+  .row{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+  button{width:100%;border:0;border-radius:18px;padding:15px 10px;font-size:16px;font-weight:800;cursor:pointer;color:#fff;background:linear-gradient(180deg,var(--blue),#2b6fd6);box-shadow:0 10px 22px rgba(77,163,255,.3),inset 0 1px 0 rgba(255,255,255,.5);margin-top:14px}
+  button.secondary{background:rgba(255,255,255,.12);box-shadow:inset 0 1px 0 rgba(255,255,255,.2)}
+  button:active{transform:scale(.98)}
+  .entry{background:var(--card);border:1px solid rgba(255,255,255,.12);border-radius:20px;padding:14px 16px;margin:10px 0}
+  .entry h3{margin:0 0 4px;font-size:16px}
+  .entry p{margin:0;font-size:13px}
+  .entry .meta{font-variant-numeric:tabular-nums}
+  .del{width:auto;padding:8px 12px;font-size:13px;margin-top:10px;background:rgba(255,255,255,.12)}
+  .empty{text-align:center;padding:18px 10px}
+  .note{font-size:12px;text-align:center}
+  @media (prefers-reduced-motion:reduce){*{scroll-behavior:auto!important}}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <div><h1>Faraday — Charge + Trip Tracker</h1><p class="sub">Far a day · Browser only · No install · Data stays in this browser</p></div>
+    <div class="badge" aria-label="Beta test status">Beta — Test</div>
+  </header>
+  <div class="beta-note"><strong>Beta — Test:</strong> This app is untested by the user until he tests it in the car. Please test the log, totals, and cost-per-mile before relying on it.</div>
+
+  <div class="grid" aria-label="Totals">
+    <div class="card"><label>Sessions</label><strong id="totalSessions">0</strong><span>charge logs</span></div>
+    <div class="card"><label>Total energy</label><strong id="totalKwh">0</strong><span>kWh</span></div>
+    <div class="card"><label>Total cost</label><strong id="totalCost">$0.00</strong><span>all sessions</span></div>
+    <div class="card"><label>Total trip</label><strong id="totalMiles">0</strong><span>miles</span></div>
+    <div class="card wide"><label>Average cost per mile</label><strong id="costPerMile">—</strong><span>total cost ÷ total trip miles (cost + miles required)</span></div>
+  </div>
+
+  <form id="form" class="card" aria-label="Add a charge session">
+    <h2 style="margin:0;font-size:17px">Log a charge</h2>
+    <label for="date">Date</label>
+    <input id="date" type="date" required>
+    <div class="row">
+      <div><label for="startPct">Start %</label><input id="startPct" type="number" min="0" max="100" step="1" placeholder="20"></div>
+      <div><label for="endPct">End %</label><input id="endPct" type="number" min="0" max="100" step="1" placeholder="80" required></div>
+    </div>
+    <div class="row">
+      <div><label for="kwh">Energy (kWh)</label><input id="kwh" type="number" min="0" step="0.01" placeholder="35.5" required></div>
+      <div><label for="miles">Trip distance (miles)</label><input id="miles" type="number" min="0" step="0.1" placeholder="120"></div>
+    </div>
+    <label for="cost">Cost ($) — optional</label>
+    <input id="cost" type="number" min="0" step="0.01" placeholder="12.50">
+    <label for="location">Location — optional</label>
+    <input id="location" type="text" placeholder="e.g. Home, King of Prussia supercharger" maxlength="120">
+    <button type="submit">＋ Add charge session</button>
+  </form>
+
+  <div style="display:flex;gap:10px">
+    <button id="exportBtn" class="secondary" type="button">Export JSON</button>
+    <button id="clearBtn" class="secondary" type="button">Clear all</button>
+  </div>
+
+  <h2 style="font-size:17px;margin:22px 0 4px">History</h2>
+  <div id="list"></div>
+  <p class="note">Nothing is uploaded. Everything is stored only in this browser's localStorage. Clear this browser's site data and your log is gone — export regularly.</p>
+</div>
+<script>
+(function(){
+  const KEY='faraday-charge-trip-v1';
+  const $=id=>document.getElementById(id);
+  const today=new Date(); $('date').value=today.toISOString().slice(0,10);
+  function load(){ try{return JSON.parse(localStorage.getItem(KEY)||'[]')}catch(e){return[]} }
+  function save(v){ localStorage.setItem(KEY,JSON.stringify(v)) }
+  function money(n){ return '$'+Number(n).toFixed(2) }
+  function esc(s){ return String(s||'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])) }
+  function render(){
+    const items=load();
+    const kwh=items.reduce((a,x)=>a+(Number(x.kwh)||0),0);
+    const cost=items.reduce((a,x)=>a+(Number(x.cost)||0),0);
+    const miles=items.reduce((a,x)=>a+(Number(x.miles)||0),0);
+    $('totalSessions').textContent=items.length;
+    $('totalKwh').textContent=kwh.toFixed(1);
+    $('totalCost').textContent=money(cost);
+    $('totalMiles').textContent=miles.toFixed(1);
+    $('costPerMile').textContent=(miles>0&&cost>0)?money(cost/miles)+' / mile':'—';
+    const list=$('list');
+    if(!items.length){ list.innerHTML='<div class="entry empty"><p>No charges logged yet. Add your first charge above.</p></div>'; return }
+    list.innerHTML=items.slice().reverse().map((x,i)=>{
+      const idx=items.length-1-i;
+      const cpm=(x.cost&&x.miles)?money(Number(x.cost)/Number(x.miles))+' / mile':'—';
+      return '<div class="entry"><h3>'+esc(x.date||'—')+(x.location?' · '+esc(x.location):'')+'</h3>'
+        +'<p class="meta">'+(x.startPct!==''?esc(x.startPct)+'% → ':'')+esc(x.endPct)+'% · '+esc(x.kwh)+' kWh'
+        +(x.miles?' · '+esc(x.miles)+' mi':'')+(x.cost?' · '+money(x.cost):'')+' · '+cpm+'</p>'
+        +'<button class="del" type="button" data-del="'+idx+'">Delete</button></div>';
+    }).join('');
+    list.querySelectorAll('[data-del]').forEach(b=>b.onclick=()=>{ const items=load(); items.splice(Number(b.dataset.del),1); save(items); render(); });
+  }
+  $('form').onsubmit=e=>{
+    e.preventDefault();
+    const items=load();
+    items.push({date:$('date').value,startPct:$('startPct').value,endPct:$('endPct').value,kwh:$('kwh').value,miles:$('miles').value,cost:$('cost').value,location:$('location').value.trim(),createdAt:new Date().toISOString()});
+    save(items); e.target.reset(); $('date').value=today.toISOString().slice(0,10); render();
+  };
+  $('exportBtn').onclick=()=>{
+    const blob=new Blob([JSON.stringify(load(),null,2)],{type:'application/json'});
+    const a=document.createElement('a'); a.href=URL.createObjectURL(blob); a.download='faraday-charge-trip.json'; a.click(); URL.revokeObjectURL(a.href);
+  };
+  $('clearBtn').onclick=()=>{ if(confirm('Clear all charge sessions? This cannot be undone.')){ save([]); render(); } };
+  render();
+})();
+</script>
+</body>
+</html>
