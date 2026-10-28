@@ -6,6 +6,20 @@ Learn traffic signal cycles from your own drives, then get a predicted countdown
 
 Build verified 2026-10-23: Next.js 15, 109 kB first load, static page.
 
+## Coming soon — and much more
+Free, open-source browser apps for your car, in the same clean style as this one:
+
+- Charge + trip tracker
+- Parking spot saver
+- Road-trip / charger planner
+- Commute ETA learner
+- Maintenance log
+- Eco driving score
+- Break timer for long drives
+- Lease / mileage tracker
+
+And much more.
+
 ## Deploy to Vercel (free, ~3 min)
 1. Push this folder to a GitHub repo (or run `npx vercel` in this folder and follow prompts)
 2. Vercel → Add New Project → import repo → Framework: Next.js → Deploy (no env vars needed)
