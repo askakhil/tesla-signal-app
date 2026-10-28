@@ -1,0 +1,125 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#0b1220">
+<title>Faraday — Parking Spot Saver</title>
+<style>
+  :root{--bg:#0b1220;--card:rgba(255,255,255,.09);--text:#f5f7ff;--muted:#a8b0c2;--blue:#4da3ff;--amber:#f59e0b;--green:#34d399}
+  *{box-sizing:border-box}
+  body{margin:0;min-height:100vh;color:var(--text);font-family:-apple-system,BlinkMacSystemFont,"SF Pro Text",Segoe UI,Roboto,Helvetica,Arial,sans-serif;background:radial-gradient(1000px 500px at 50% -10%,#24365e 0%,var(--bg) 55%);display:flex;flex-direction:column;align-items:center;padding:18px 14px 30px}
+  .wrap{width:min(520px,100%)}
+  header{display:flex;justify-content:space-between;align-items:flex-start;gap:10px}
+  h1{font-size:19px;margin:0} p{color:var(--muted);line-height:1.5}
+  .badge{flex:none;font-size:11px;font-weight:800;letter-spacing:.06em;text-transform:uppercase;padding:8px 11px;border-radius:999px;color:#111;background:linear-gradient(180deg,#fde68a,#f59e0b);box-shadow:0 8px 20px rgba(245,158,11,.35),inset 0 1px 0 #fff}
+  .card{background:var(--card);border:1px solid rgba(255,255,255,.13);border-radius:24px;padding:18px;box-shadow:0 14px 30px rgba(0,0,0,.3),inset 0 1px 0 rgba(255,255,255,.15);margin:14px 0}
+  .card label{display:block;color:var(--muted);font-size:11px;letter-spacing:.1em;text-transform:uppercase}
+  .big{font-size:52px;font-weight:900;line-height:1.1;margin:8px 0 2px;font-variant-numeric:tabular-nums}
+  .arrow{font-size:64px;line-height:1;text-align:center;transition:transform .3s ease;will-change:transform}
+  .grid{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+  .grid .card{margin:0}
+  .grid strong{display:block;font-size:24px;margin-top:5px}
+  button{width:100%;border:0;border-radius:18px;padding:16px;font-size:17px;font-weight:800;cursor:pointer;color:#fff;background:linear-gradient(180deg,var(--blue),#2b6fd6);box-shadow:0 10px 22px rgba(77,163,255,.3),inset 0 1px 0 rgba(255,255,255,.5)}
+  button.secondary{background:rgba(255,255,255,.12);box-shadow:inset 0 1px 0 rgba(255,255,255,.2)}
+  button:active{transform:scale(.98)}
+  .row{display:flex;gap:10px;margin-top:12px}.row button{flex:1}
+  input,textarea{width:100%;border:1px solid rgba(255,255,255,.18);background:rgba(0,0,0,.25);color:var(--text);border-radius:14px;padding:13px;font-size:16px;font-family:inherit}
+  textarea{resize:vertical;min-height:64px}
+  .status{text-align:center;color:var(--muted);font-size:13px;min-height:18px}
+  .ok{color:var(--green)} .note{font-size:12px;text-align:center}
+  a{color:#cfe4ff}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <div><h1>Faraday — Parking Spot Saver</h1><p style="margin:4px 0 0">Far a day · Browser only · No install</p></div>
+    <div class="badge" aria-label="Beta test badge">Beta — Test</div>
+  </header>
+  <p class="note">⚠️ Beta — untested by the user until he tests it. Please test this in the car before relying on it.</p>
+
+  <div class="card" id="spotCard">
+    <label>Saved parking spot</label>
+    <div class="big" id="spotState">No spot saved</div>
+    <p id="spotMeta" style="margin:6px 0 0">Tap “Save my parking spot” when you park. Your location is saved only in this browser.</p>
+  </div>
+
+  <div class="card" id="guideCard" hidden>
+    <label>Back to your car</label>
+    <div class="arrow" id="arrow">↑</div>
+    <div class="big" style="text-align:center" id="distance">—</div>
+    <p style="text-align:center;margin:4px 0 0" id="bearingText">Waiting for GPS…</p>
+    <div class="grid" style="margin-top:14px">
+      <div class="card"><label>Your location</label><strong id="youLoc">—</strong><span style="color:var(--muted);font-size:12px">GPS accuracy in metres</span></div>
+      <div class="card"><label>Saved at</label><strong id="savedTime">—</strong><span style="color:var(--muted);font-size:12px">local time</span></div>
+    </div>
+  </div>
+
+  <button id="saveBtn">📍 Save my parking spot</button>
+  <div class="row">
+    <button class="secondary" id="findBtn">🧭 Find my car</button>
+    <button class="secondary" id="clearBtn">Clear spot</button>
+  </div>
+
+  <div class="card">
+    <label for="note">Note — level, row, landmark</label>
+    <textarea id="note" placeholder="e.g. Level 3, Row B, near elevator"></textarea>
+    <p style="font-size:12px;margin:8px 0 0">Notes save automatically in this browser. Nothing is uploaded, no account, no database.</p>
+  </div>
+
+  <p class="status" id="status">Allow Location when asked. GPS works best outdoors, with a clear sky view.</p>
+  <p class="note">Works in a phone browser mounted in any car, and in a Tesla browser. HTTPS is required for GPS in most browsers. If GPS is off, this app cannot save or guide you — use the note field as a fallback.</p>
+</div>
+<script>
+(function(){
+  const $=id=>document.getElementById(id);
+  const KEY='faraday-parking-spot-v1';
+  let spot=null, watchId=null, current=null;
+  function load(){ try{ spot=JSON.parse(localStorage.getItem(KEY)||'null'); }catch(e){ spot=null; } }
+  function save(){ localStorage.setItem(KEY, JSON.stringify(spot)); }
+  function haversine(a,b){ const R=6371000, dLa=(b.lat-a.lat)*Math.PI/180, dLo=(b.lon-a.lon)*Math.PI/180, h=Math.sin(dLa/2)**2+Math.cos(a.lat*Math.PI/180)*Math.cos(b.lat*Math.PI/180)*Math.sin(dLo/2)**2; return 2*R*Math.asin(Math.sqrt(h)); }
+  function bearing(a,b){ const dLo=(b.lon-a.lon)*Math.PI/180, y=Math.sin(dLo)*Math.cos(b.lat*Math.PI/180), x=Math.cos(a.lat*Math.PI/180)*Math.sin(b.lat*Math.PI/180)-Math.sin(a.lat*Math.PI/180)*Math.cos(b.lat*Math.PI/180)*Math.cos(dLo); return (Math.atan2(y,x)*180/Math.PI+360)%360; }
+  function compass(deg){ const dirs=['N','NE','E','SE','S','SW','W','NW']; return dirs[Math.round(deg/45)%8]; }
+  function fmtDist(m){ return m<1000 ? Math.round(m)+' m' : (m/1609.344).toFixed(2)+' mi'; }
+  function render(){
+    if(!spot){ $('spotState').textContent='No spot saved'; $('spotMeta').textContent='Tap “Save my parking spot” when you park. Your location is saved only in this browser.'; $('guideCard').hidden=true; $('note').value=''; return; }
+    $('spotState').textContent='Spot saved ✓';
+    $('spotMeta').textContent='Lat '+spot.lat.toFixed(6)+', Lon '+spot.lon.toFixed(6)+' · Accuracy ±'+(spot.accuracy?Math.round(spot.accuracy):'—')+' m';
+    $('savedTime').textContent=new Date(spot.savedAt).toLocaleTimeString([], {hour:'numeric',minute:'2-digit'});
+    $('note').value=spot.note||'';
+    $('guideCard').hidden=false;
+  }
+  function updateGuide(){
+    if(!spot||!current) return;
+    const d=haversine(current, spot), br=bearing(current, spot);
+    $('distance').textContent=fmtDist(d);
+    $('arrow').style.transform='rotate('+br+'deg)';
+    $('bearingText').textContent=d<10 ? 'You are at your car (within ~10 m).' : 'Walk '+compass(br)+' ('+Math.round(br)+'°) — about '+fmtDist(d)+' away.';
+    $('youLoc').textContent=current.accuracy?('±'+Math.round(current.accuracy)+' m'):'—';
+  }
+  function startWatch(){
+    if(watchId!=null||!('geolocation' in navigator)) return;
+    watchId=navigator.geolocation.watchPosition(pos=>{
+      current={lat:pos.coords.latitude, lon:pos.coords.longitude, accuracy:pos.coords.accuracy};
+      $('status').innerHTML='<span class="ok">GPS active</span> · Location updating.';
+      updateGuide();
+    }, err=>{ $('status').textContent='GPS unavailable: '+(err.message||'permission denied')+' — allow Location and use HTTPS, or use the note field.'; }, {enableHighAccuracy:true, maximumAge:5000, timeout:15000});
+  }
+  $('saveBtn').onclick=()=>{
+    if(!('geolocation' in navigator)){ $('status').textContent='This browser does not support GPS. Use the note field to record where you parked.'; return; }
+    $('status').textContent='Getting your current location… allow Location when asked.';
+    navigator.geolocation.getCurrentPosition(pos=>{
+      spot={lat:pos.coords.latitude, lon:pos.coords.longitude, accuracy:pos.coords.accuracy, savedAt:Date.now(), note:$('note').value.trim()};
+      save(); render(); startWatch(); updateGuide();
+      $('status').innerHTML='<span class="ok">Spot saved!</span> Walk away — “Find my car” will guide you back.';
+    }, err=>{ $('status').textContent='Could not save spot: '+(err.message||'permission denied')+' — allow Location and try again outdoors.'; }, {enableHighAccuracy:true, timeout:15000});
+  };
+  $('findBtn').onclick=()=>{ if(!spot){ $('status').textContent='No spot saved yet — save one when you park.'; return; } startWatch(); $('status').textContent='Finding your car… keep GPS on and walk slowly outdoors.'; updateGuide(); };
+  $('clearBtn').onclick=()=>{ spot=null; localStorage.removeItem(KEY); render(); $('status').textContent='Spot cleared.'; };
+  $('note').addEventListener('input', ()=>{ if(spot){ spot.note=$('note').value.trim(); save(); } });
+  load(); render(); if(spot) startWatch();
+})();
+</script>
+</body>
+</html>
