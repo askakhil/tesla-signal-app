@@ -1,0 +1,271 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#0b0f14">
+<title>Faraday — Vintage Speedometer</title>
+<style>
+  :root{
+    --bg:#0b0f14; --card:rgba(255,255,255,.08); --card2:rgba(255,255,255,.12);
+    --text:#f5f1e8; --muted:#b8b2a3; --cream:#f7ecd2; --brass:#c9a227; --brass2:#8a6d1d;
+    --blue:#4da3ff; --purple:#8b7bff;
+  }
+  *{box-sizing:border-box}
+  body{
+    margin:0; min-height:100vh; color:var(--text);
+    font-family:-apple-system,BlinkMacSystemFont,"SF Pro Text",Segoe UI,Roboto,Helvetica,Arial,sans-serif;
+    background:radial-gradient(1200px 600px at 50% -10%, #2b3a5e 0%, var(--bg) 55%);
+    display:flex; flex-direction:column; align-items:center; padding:18px 14px 28px;
+  }
+  header{width:min(520px,100%); display:flex; justify-content:space-between; align-items:center}
+  header h1{font-size:17px; margin:0; letter-spacing:.02em}
+  header p{margin:2px 0 0; color:var(--muted); font-size:12px}
+  .badge{
+    font-size:11px; font-weight:700; letter-spacing:.08em; text-transform:uppercase;
+    padding:7px 10px; border-radius:999px; color:#101010;
+    background:linear-gradient(180deg,#ffe9a3,#d4a017);
+    box-shadow:0 6px 18px rgba(212,160,23,.35), inset 0 1px 0 rgba(255,255,255,.7);
+  }
+  /* --- Vintage dial --- */
+  .dial-wrap{width:min(360px,92vw); margin:18px auto 6px; position:relative; filter:drop-shadow(0 18px 30px rgba(0,0,0,.5))}
+  .dial{
+    aspect-ratio:1; border-radius:50%; position:relative; overflow:hidden;
+    background:
+      radial-gradient(circle at 50% 32%, rgba(255,255,255,.55), rgba(255,255,255,0) 42%),
+      radial-gradient(circle, var(--cream) 0 62%, #e9d9ae 63% 100%);
+    border:14px solid transparent;
+    background-clip:padding-box;
+    box-shadow:inset 0 0 0 3px var(--brass), inset 0 0 0 9px #3a2f12, 0 0 0 3px #6b5a1e;
+  }
+  .dial::after{ /* glossy sweep, transform/opacity only */
+    content:""; position:absolute; inset:-20% -10% 55% -10%; border-radius:50%;
+    background:linear-gradient(180deg, rgba(255,255,255,.45), rgba(255,255,255,0));
+    opacity:.55; transform:rotate(-8deg); pointer-events:none;
+  }
+  .tick{position:absolute; left:50%; top:50%; width:2px; height:10px; background:#2b2410; transform-origin:1px 0; opacity:.8}
+  .tick.major{width:3px; height:16px; background:#1e1808}
+  .num{position:absolute; left:50%; top:50%; font-weight:800; color:#241c07; font-size:15px; transform:translate(-50%,-50%); text-align:center}
+  .num small{display:block; font-size:9px; font-weight:700; color:#6b5d2e; letter-spacing:.05em}
+  .needle{
+    position:absolute; left:50%; bottom:50%; width:5px; height:42%; margin-left:-2.5px;
+    background:linear-gradient(180deg,#d33,#8b0000); border-radius:4px 4px 0 0;
+    transform-origin:50% 100%; transform:rotate(-120deg);
+    box-shadow:0 2px 6px rgba(0,0,0,.35); will-change:transform;
+  }
+  .hub{
+    position:absolute; left:50%; top:50%; width:34px; height:34px; margin:-17px 0 0 -17px; border-radius:50%;
+    background:radial-gradient(circle at 35% 30%, #ffe9a3, #b8860b 60%, #5e4300);
+    box-shadow:0 3px 10px rgba(0,0,0,.4), inset 0 1px 0 #fff;
+  }
+  .brand{position:absolute; left:50%; top:62%; transform:translateX(-50%); text-align:center; color:#6b5d2e; font-size:11px; letter-spacing:.22em; font-weight:800}
+  .brand span{display:block; letter-spacing:.05em; font-size:9px; font-weight:600; margin-top:2px}
+  /* --- Digital readout + cards --- */
+  .digital{text-align:center; margin:4px 0 14px}
+  .digital .speed{font-size:76px; line-height:1; font-weight:800; font-variant-numeric:tabular-nums; letter-spacing:-.03em}
+  .digital .unit{font-size:22px; font-weight:700; color:var(--muted); margin-left:6px}
+  .digital .sub{color:var(--muted); font-size:13px; margin-top:6px}
+  .cards{width:min(520px,100%); display:grid; grid-template-columns:1fr 1fr; gap:12px}
+  .card{
+    background:var(--card); border:1px solid rgba(255,255,255,.12); border-radius:22px; padding:14px 16px;
+    box-shadow:0 10px 24px rgba(0,0,0,.25), inset 0 1px 0 rgba(255,255,255,.15);
+  }
+  .card label{display:block; color:var(--muted); font-size:11px; letter-spacing:.1em; text-transform:uppercase}
+  .card strong{display:block; font-size:26px; margin-top:4px; font-variant-numeric:tabular-nums}
+  .card span{color:var(--muted); font-size:12px}
+  .controls{width:min(520px,100%); display:flex; gap:10px; margin-top:14px}
+  button{
+    flex:1; border:0; border-radius:18px; padding:15px 10px; font-size:16px; font-weight:800; cursor:pointer;
+    color:#fff; background:linear-gradient(180deg,var(--blue),#2b6fd6);
+    box-shadow:0 10px 22px rgba(77,163,255,.3), inset 0 1px 0 rgba(255,255,255,.5);
+  }
+  button.secondary{background:rgba(255,255,255,.12); box-shadow:inset 0 1px 0 rgba(255,255,255,.2)}
+  button:active{transform:scale(.98); opacity:.9}
+  .seg{width:min(520px,100%); display:flex; background:rgba(255,255,255,.1); border-radius:16px; padding:4px; margin-top:12px}
+  .seg button{background:transparent; box-shadow:none; padding:10px; font-size:14px; color:var(--muted)}
+  .seg button.active{background:#fff; color:#111; box-shadow:0 4px 12px rgba(0,0,0,.25)}
+  .note{width:min(520px,100%); color:var(--muted); font-size:12px; line-height:1.5; text-align:center; margin-top:14px}
+  .note a{color:#cfe4ff}
+  @media (prefers-reduced-motion:reduce){ *{scroll-behavior:auto !important} }
+</style>
+</head>
+<body><div style="position:fixed;top:10px;right:10px;z-index:9999;background:linear-gradient(180deg,#fde68a,#f59e0b);color:#111;font-weight:800;font-size:12px;letter-spacing:.06em;padding:8px 11px;border-radius:999px;box-shadow:0 8px 20px rgba(245,158,11,.35)">Beta — Test · Untested until user tests it</div>
+<header>
+  <div><h1>Faraday — Vintage Speedometer</h1><p>Far a day · Browser only · No install</p></div>
+  <div class="badge">Vintage</div>
+</header>
+
+<div class="dial-wrap" aria-label="Analog speedometer">
+  <div class="dial" id="dial">
+    <div class="needle" id="needle"></div>
+    <div class="hub"></div>
+    <div class="brand">FARADAY<span id="dialMaxLabel">0–160 MPH</span></div>
+  </div>
+</div>
+
+<div class="digital">
+  <div><span class="speed" id="speedBig">0</span><span class="unit" id="unitLabel">mph</span></div>
+  <div class="sub" id="status">Tap Start drive — GPS will begin when you allow location.</div>
+</div>
+
+<div class="cards">
+  <div class="card"><label>Trip distance</label><strong id="trip">0.00</strong><span id="tripUnit">miles</span></div>
+  <div class="card"><label>Top speed</label><strong id="top">0</strong><span id="topUnit">mph</span></div>
+  <div class="card"><label>GPS accuracy</label><strong id="acc">—</strong><span>metres · lower is better</span></div>
+  <div class="card"><label>Session time</label><strong id="elapsed">0:00</strong><span>since Start drive</span></div>
+</div>
+
+<div class="controls">
+  <button id="startBtn">▶ Start drive</button>
+  <button class="secondary" id="resetBtn">Reset trip</button>
+</div>
+
+<div class="seg" role="group" aria-label="Speed unit">
+  <button id="mphBtn" class="active">MPH</button>
+  <button id="kmhBtn">KM/H</button>
+</div>
+
+<p class="note">
+  Works in a phone browser mounted in any car, and in a Tesla browser. Speed comes from your device GPS only — nothing is uploaded, no account, no database.<br>
+  Parked? Use <button id="simBtn" style="flex:none;padding:6px 10px;font-size:13px;border-radius:999px">Simulate a drive</button> to preview the needle without moving. HTTPS is required for GPS in most browsers.
+</p>
+
+<script>
+(function(){
+  const $ = id => document.getElementById(id);
+  const dial = $('dial'), needle = $('needle');
+  // Build ticks + numbers once. Dial sweep: -120deg to +120deg.
+  const maxMph = 160, maxKmh = 260;
+  const labels = [0,20,40,60,80,100,120,140,160];
+  labels.forEach(v => {
+    const a = -120 + (v/maxMph)*240;
+    const tick = document.createElement('div');
+    tick.className = 'tick major';
+    tick.style.transform = `rotate(${a}deg) translateY(-128px)`;
+    dial.appendChild(tick);
+    const n = document.createElement('div');
+    n.className = 'num';
+    const rad = (a-90) * Math.PI/180;
+    n.style.left = (50 + 36*Math.cos(rad)) + '%';
+    n.style.top  = (50 + 36*Math.sin(rad)) + '%';
+    n.innerHTML = v + '<small>MPH</small>';
+    dial.appendChild(n);
+  });
+  for (let v=10; v<160; v+=10){
+    if (v % 20 === 0) continue;
+    const a = -120 + (v/maxMph)*240;
+    const tick = document.createElement('div');
+    tick.className = 'tick';
+    tick.style.transform = `rotate(${a}deg) translateY(-132px)`;
+    dial.appendChild(tick);
+  }
+
+  let unit = 'mph';
+  let watchId = null, simTimer = null, simT = 0;
+  let displayed = 0, targetMps = 0, topMps = 0, tripM = 0;
+  let lastPos = null, lastTime = 0, startTime = 0, elapsedTimer = null;
+
+  const fmt = (n, d=0) => n.toLocaleString(undefined, {maximumFractionDigits:d, minimumFractionDigits:d});
+  function speedInUnit(mps){ return unit==='mph' ? mps*2.23694 : mps*3.6; }
+  function maxInUnit(){ return unit==='mph' ? maxMph : maxKmh; }
+  function distInUnit(m){ return unit==='mph' ? m/1609.344 : m/1000; }
+  function haversine(a,b){
+    const R=6371000, dLa=(b.lat-a.lat)*Math.PI/180, dLo=(b.lon-a.lon)*Math.PI/180;
+    const h=Math.sin(dLa/2)**2 + Math.cos(a.lat*Math.PI/180)*Math.cos(b.lat*Math.PI/180)*Math.sin(dLo/2)**2;
+    return 2*R*Math.asin(Math.sqrt(h));
+  }
+  function render(){
+    const s = speedInUnit(displayed);
+    $('speedBig').textContent = fmt(s);
+    $('unitLabel').textContent = unit;
+    $('trip').textContent = fmt(distInUnit(tripM), 2);
+    $('tripUnit').textContent = unit==='mph' ? 'miles' : 'km';
+    $('top').textContent = fmt(speedInUnit(topMps));
+    $('topUnit').textContent = unit;
+    const frac = Math.min(speedInUnit(displayed)/maxInUnit(), 1);
+    needle.style.transform = `rotate(${-120 + frac*240}deg)`;
+    $('dialMaxLabel').textContent = unit==='mph' ? '0–160 MPH' : '0–260 KM/H';
+  }
+  // Smooth needle: transform only, eased in rAF.
+  (function loop(){
+    displayed += (targetMps - displayed) * 0.12;
+    if (Math.abs(targetMps-displayed) < 0.02) displayed = targetMps;
+    render();
+    requestAnimationFrame(loop);
+  })();
+
+  function onPos(pos){
+    const now = pos.timestamp;
+    const acc = pos.coords.accuracy;
+    $('acc').textContent = acc ? Math.round(acc) : '—';
+    let mps = pos.coords.speed;
+    if (mps == null && lastPos){
+      const d = haversine(lastPos, {lat:pos.coords.latitude, lon:pos.coords.longitude});
+      const dt = (now-lastTime)/1000;
+      if (dt > 0 && dt < 10) mps = d/dt;
+    }
+    if (mps != null && isFinite(mps) && mps >= 0){
+      targetMps = mps;
+      if (mps > topMps) topMps = mps;
+      // Trip: integrate GPS speed, a stable proxy that avoids jumpy haversine sums.
+      if (lastTime && now > lastTime){
+        const dt = (now-lastTime)/1000;
+        if (dt < 10) tripM += mps * dt;
+      }
+      $('status').textContent = 'GPS active · Driving — glanceable, keep eyes on the road.';
+    }
+    lastPos = {lat:pos.coords.latitude, lon:pos.coords.longitude};
+    lastTime = now;
+  }
+  function onErr(e){
+    $('status').textContent = 'GPS unavailable: ' + (e.message || 'permission denied') + ' — try Simulate a drive, or allow Location and use HTTPS.';
+    targetMps = 0;
+  }
+  function startElapsed(){
+    if (elapsedTimer) return;
+    startTime = Date.now();
+    elapsedTimer = setInterval(() => {
+      const s = Math.floor((Date.now()-startTime)/1000);
+      $('elapsed').textContent = Math.floor(s/60) + ':' + String(s%60).padStart(2,'0');
+    }, 1000);
+  }
+  $('startBtn').onclick = () => {
+    if (watchId != null){
+      navigator.geolocation.clearWatch(watchId); watchId = null;
+      $('startBtn').textContent = '▶ Start drive';
+      $('status').textContent = 'Paused.';
+      return;
+    }
+    if (!('geolocation' in navigator)){
+      $('status').textContent = 'This browser does not support GPS. Use Simulate a drive to preview.';
+      return;
+    }
+    startElapsed();
+    $('status').textContent = 'Waiting for GPS… allow Location when asked.';
+    watchId = navigator.geolocation.watchPosition(onPos, onErr, {enableHighAccuracy:true, maximumAge:1000, timeout:15000});
+    $('startBtn').textContent = '⏸ Pause drive';
+  };
+  $('resetBtn').onclick = () => { tripM = 0; topMps = 0; displayed = 0; targetMps = 0; $('elapsed').textContent = '0:00'; };
+  $('mphBtn').onclick = () => { unit='mph'; $('mphBtn').classList.add('active'); $('kmhBtn').classList.remove('active'); };
+  $('kmhBtn').onclick = () => { unit='kmh'; $('kmhBtn').classList.add('active'); $('mphBtn').classList.remove('active'); };
+  $('simBtn').onclick = () => {
+    if (simTimer){ clearInterval(simTimer); simTimer=null; targetMps=0; $('simBtn').textContent='Simulate a drive'; return; }
+    startElapsed();
+    $('status').textContent = 'Simulated drive — not real GPS.';
+    $('simBtn').textContent = 'Stop simulation';
+    simT = 0;
+    simTimer = setInterval(() => {
+      simT += 1;
+      // Gentle drive profile: accelerate, cruise, slow — in m/s, peak ~26 m/s (~58 mph).
+      const mps = Math.max(0, 13 + 13*Math.sin(simT/9) + 4*Math.sin(simT/3.2));
+      targetMps = mps;
+      if (mps > topMps) topMps = mps;
+      tripM += mps;
+      $('acc').textContent = 'Sim';
+    }, 1000);
+  };
+  render();
+})();
+</script>
+</body>
+</html>
