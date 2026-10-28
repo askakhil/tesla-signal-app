@@ -1,0 +1,222 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#0b1220">
+<title>Faraday — Commute ETA Learner</title>
+<style>
+  :root{--bg:#0b1220;--card:rgba(255,255,255,.09);--text:#f4f6fb;--muted:#a8b0c2;--blue:#4da3ff;--purple:#8b7bff;--amber:#fbbf24;--green:#34d399}
+  *{box-sizing:border-box}
+  body{margin:0;min-height:100vh;color:var(--text);font-family:-apple-system,BlinkMacSystemFont,"SF Pro Text",Segoe UI,Roboto,Helvetica,Arial,sans-serif;background:radial-gradient(1000px 500px at 50% -10%,#24365f 0%,var(--bg) 55%);padding:18px 14px 30px}
+  .wrap{width:min(560px,100%);margin:0 auto}
+  header{display:flex;justify-content:space-between;align-items:flex-start;gap:12px}
+  header h1{font-size:20px;margin:0}
+  header p{margin:4px 0 0;color:var(--muted);font-size:13px;line-height:1.5}
+  .badge{flex:none;font-size:11px;font-weight:800;letter-spacing:.06em;text-transform:uppercase;padding:8px 11px;border-radius:999px;color:#1a1200;background:linear-gradient(180deg,#ffe9a3,#f59e0b);box-shadow:0 8px 20px rgba(245,158,11,.35),inset 0 1px 0 rgba(255,255,255,.7);text-align:center}
+  .card{background:var(--card);border:1px solid rgba(255,255,255,.12);border-radius:24px;padding:18px;box-shadow:0 12px 28px rgba(0,0,0,.28),inset 0 1px 0 rgba(255,255,255,.15);margin:14px 0}
+  .card h2{font-size:16px;margin:0 0 6px}
+  .card p{color:var(--muted);font-size:13px;line-height:1.5;margin:6px 0}
+  label{display:block;color:var(--muted);font-size:11px;letter-spacing:.08em;text-transform:uppercase;margin:12px 0 6px}
+  input,select{width:100%;padding:13px 14px;border-radius:14px;border:1px solid rgba(255,255,255,.18);background:rgba(0,0,0,.25);color:var(--text);font-size:16px}
+  .grid{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+  button{width:100%;border:0;border-radius:18px;padding:15px;font-size:16px;font-weight:800;cursor:pointer;color:#fff;background:linear-gradient(180deg,var(--blue),#2b6fd6);box-shadow:0 10px 22px rgba(77,163,255,.3),inset 0 1px 0 rgba(255,255,255,.5);margin-top:12px}
+  button:active{transform:scale(.98);opacity:.9}
+  button.secondary{background:rgba(255,255,255,.12);box-shadow:inset 0 1px 0 rgba(255,255,255,.2)}
+  button.danger{background:linear-gradient(180deg,#f87171,#dc2626);box-shadow:0 10px 22px rgba(248,113,113,.3)}
+  .big{font-size:42px;font-weight:900;letter-spacing:-.03em;line-height:1;margin:8px 0 4px;font-variant-numeric:tabular-nums}
+  .pill{display:inline-block;padding:6px 12px;border-radius:999px;background:rgba(52,211,153,.18);color:#a7f3d0;font-weight:700;font-size:13px}
+  .pill.low{background:rgba(251,191,36,.18);color:#fde68a}
+  .pill.med{background:rgba(77,163,255,.18);color:#bfdbfe}
+  .trip{display:flex;justify-content:space-between;gap:10px;padding:12px 0;border-top:1px solid rgba(255,255,255,.1)}
+  .trip:first-of-type{border-top:0}
+  .trip b{display:block}
+  .trip span{color:var(--muted);font-size:13px}
+  .trip button{width:auto;padding:8px 12px;font-size:13px;margin:0}
+  .note{color:var(--muted);font-size:12px;line-height:1.6;text-align:center}
+  .active-trip{border:1px solid rgba(52,211,153,.5)}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <div>
+      <h1>Faraday — Commute ETA Learner</h1>
+      <p>Far a day · Browser only · No install · Trips stay in this browser only.</p>
+    </div>
+    <div class="badge" title="Untested by the user until he tests it">Beta — Test</div>
+  </header>
+  <p class="note" style="text-align:left">⚠️ Beta — Test: this app is untested by the user until he tests it. Log a few real trips first — predictions get better with more data.</p>
+
+  <section class="card">
+    <h2>Predict my ETA</h2>
+    <p>Pick a route and a departure time. The app averages your logged trips for that route at that time of day.</p>
+    <label for="predRoute">Route</label>
+    <select id="predRoute"></select>
+    <label for="predTime">Departure time</label>
+    <input id="predTime" type="time" value="08:00">
+    <button id="predictBtn">Predict ETA</button>
+    <div id="prediction" style="display:none">
+      <div class="big" id="predArrival">—</div>
+      <div><span class="pill" id="predConf">—</span> <span id="predDetail" style="color:var(--muted);font-size:13px"></span></div>
+      <p id="predAvg"></p>
+    </div>
+  </section>
+
+  <section class="card" id="timerCard">
+    <h2>Live trip timer</h2>
+    <p>One main action while driving: tap Start when you leave, End when you arrive. It fills the log below.</p>
+    <label for="timerRoute">Route name</label>
+    <input id="timerRoute" type="text" placeholder="e.g. Home → Work" maxlength="80">
+    <div class="big" id="timerDisplay">0:00</div>
+    <p id="timerStatus">Not running.</p>
+    <button id="timerBtn">▶ Start trip</button>
+  </section>
+
+  <section class="card">
+    <h2>Log a trip manually</h2>
+    <label for="route">Route name</label>
+    <input id="route" type="text" placeholder="e.g. Home → Work" maxlength="80">
+    <div class="grid">
+      <div><label for="date">Date</label><input id="date" type="date"></div>
+      <div><label for="depart">Departure</label><input id="depart" type="time"></div>
+    </div>
+    <label for="arrive">Arrival</label>
+    <input id="arrive" type="time">
+    <button id="logBtn">Save trip</button>
+    <p id="logMsg"></p>
+  </section>
+
+  <section class="card">
+    <h2>What I've learned</h2>
+    <div class="grid">
+      <div><span style="color:var(--muted);font-size:12px">TRIPS LOGGED</span><div class="big" id="statTrips" style="font-size:30px">0</div></div>
+      <div><span style="color:var(--muted);font-size:12px">ROUTES</span><div class="big" id="statRoutes" style="font-size:30px">0</div></div>
+    </div>
+    <div id="learned"></div>
+  </section>
+
+  <section class="card">
+    <h2>Logged trips</h2>
+    <div id="trips"><p class="note">No trips yet. Log your first commute above.</p></div>
+    <button class="secondary" id="exportBtn">Export trips (JSON)</button>
+    <button class="danger" id="clearBtn">Delete all trips</button>
+  </section>
+
+  <p class="note">No account, no database, no paid service. Everything is in this browser's localStorage. Export regularly — a car browser may clear it. Time-of-day buckets: Night 10pm–5am · Early 5–8am · Morning 8–11am · Midday 11am–2pm · Afternoon 2–5pm · Evening 5–10pm.</p>
+</div>
+
+<script>
+(function(){
+  const $ = id => document.getElementById(id);
+  const KEY = 'faraday-commute-trips-v1';
+  const load = () => { try { return JSON.parse(localStorage.getItem(KEY)) || []; } catch(e){ return []; } };
+  const save = trips => localStorage.setItem(KEY, JSON.stringify(trips));
+  let trips = load();
+
+  function bucket(hour){
+    if (hour >= 22 || hour < 5) return 'Night';
+    if (hour < 8) return 'Early morning';
+    if (hour < 11) return 'Morning';
+    if (hour < 14) return 'Midday';
+    if (hour < 17) return 'Afternoon';
+    return 'Evening';
+  }
+  function toMin(t){ const [h,m] = t.split(':').map(Number); return h*60+m; }
+  function fmtMin(min){ const m = ((min % 1440) + 1440) % 1440; return String(Math.floor(m/60)).padStart(2,'0') + ':' + String(m%60).padStart(2,'0'); }
+  function fmtDur(min){ return Math.round(min) + ' min'; }
+  function avg(arr){ return arr.reduce((a,b)=>a+b,0)/arr.length; }
+  function conf(n){ return n >= 5 ? ['High confidence',''] : n >= 2 ? ['Medium confidence','med'] : ['Low confidence — log more trips','low']; }
+
+  function refresh(){
+    $('statTrips').textContent = trips.length;
+    const routes = [...new Set(trips.map(t=>t.route))];
+    $('statRoutes').textContent = routes.length;
+    const sel = $('predRoute');
+    const prev = sel.value;
+    sel.innerHTML = routes.length ? routes.map(r=>`<option>${r.replace(/</g,'&lt;')}</option>`).join('') : '<option value="">Log a trip first</option>';
+    if (routes.includes(prev)) sel.value = prev;
+    const learned = $('learned');
+    if (!trips.length){ learned.innerHTML = '<p>No averages yet.</p>'; }
+    else {
+      const groups = {};
+      trips.forEach(t=>{ const k = t.route + ' · ' + bucket(toMin(t.depart)/60); (groups[k] = groups[k] || []).push(t.duration); });
+      learned.innerHTML = Object.entries(groups).sort().map(([k,ds])=>`<p><b>${k.replace(/</g,'&lt;')}</b>: ${fmtDur(avg(ds))} average · ${ds.length} trip${ds.length>1?'s':''}</p>`).join('');
+    }
+    const list = $('trips');
+    if (!trips.length){ list.innerHTML = '<p class="note">No trips yet. Log your first commute above.</p>'; return; }
+    list.innerHTML = [...trips].reverse().map((t,i)=>{
+      const idx = trips.length - 1 - i;
+      return `<div class="trip"><div><b>${t.route.replace(/</g,'&lt;')}</b><span>${t.date} · ${t.depart} → ${t.arrive} · ${fmtDur(t.duration)} · ${bucket(toMin(t.depart)/60)}</span></div><button class="secondary" data-del="${idx}">Delete</button></div>`;
+    }).join('');
+    list.querySelectorAll('[data-del]').forEach(b=>b.onclick=()=>{ trips.splice(Number(b.dataset.del),1); save(trips); refresh(); });
+  }
+
+  $('predictBtn').onclick = () => {
+    const route = $('predRoute').value, time = $('predTime').value;
+    if (!route || !time){ alert('Pick a route and departure time.'); return; }
+    const depMin = toMin(time), b = bucket(depMin/60);
+    const same = trips.filter(t=>t.route===route && bucket(toMin(t.depart)/60)===b);
+    const routeTrips = trips.filter(t=>t.route===route);
+    const pool = same.length ? same : routeTrips;
+    const basis = same.length ? `same route, ${b}` : routeTrips.length ? `same route, any time (no ${b} trips yet)` : 'all trips';
+    if (!pool.length){ alert('No trips logged yet for this route.'); return; }
+    const a = avg(pool.map(t=>t.duration));
+    const [c, cls] = conf(pool.length);
+    $('prediction').style.display = 'block';
+    $('predArrival').textContent = fmtMin(depMin + a);
+    $('predConf').textContent = c; $('predConf').className = 'pill ' + cls;
+    $('predDetail').textContent = `based on ${pool.length} trip${pool.length>1?'s':''} · ${basis}`;
+    $('predAvg').textContent = `Average duration: ${fmtDur(a)} · Depart ${time} → arrive about ${fmtMin(depMin + a)}.`;
+  };
+
+  $('logBtn').onclick = () => {
+    const route = $('route').value.trim(), date = $('date').value, depart = $('depart').value, arrive = $('arrive').value;
+    if (!route || !date || !depart || !arrive){ $('logMsg').textContent = 'Fill route, date, departure and arrival.'; return; }
+    let dur = toMin(arrive) - toMin(depart); if (dur <= 0) dur += 1440;
+    trips.push({route, date, depart, arrive, duration: dur});
+    save(trips); refresh();
+    $('logMsg').textContent = `Saved: ${route} · ${fmtDur(dur)}.`;
+    $('route').value=''; $('depart').value=''; $('arrive').value='';
+  };
+
+  let timerStart = null, timerInt = null, timerRoute = '';
+  $('timerBtn').onclick = () => {
+    if (!timerStart){
+      timerRoute = $('timerRoute').value.trim();
+      if (!timerRoute){ $('timerStatus').textContent = 'Enter a route name first.'; return; }
+      timerStart = Date.now();
+      $('timerBtn').textContent = '■ End trip';
+      $('timerCard').classList.add('active-trip');
+      $('timerStatus').textContent = 'Trip running — drive safely, tap End on arrival.';
+      timerInt = setInterval(()=>{
+        const s = Math.floor((Date.now()-timerStart)/1000);
+        $('timerDisplay').textContent = Math.floor(s/60) + ':' + String(s%60).padStart(2,'0');
+      }, 1000);
+    } else {
+      clearInterval(timerInt);
+      const now = new Date();
+      const departD = new Date(timerStart);
+      const fmtT = d => String(d.getHours()).padStart(2,'0') + ':' + String(d.getMinutes()).padStart(2,'0');
+      const dur = Math.max(1, Math.round((now - departD)/60000));
+      const date = departD.toISOString().slice(0,10);
+      trips.push({route: timerRoute, date, depart: fmtT(departD), arrive: fmtT(now), duration: dur});
+      save(trips); refresh();
+      timerStart = null; $('timerBtn').textContent = '▶ Start trip'; $('timerCard').classList.remove('active-trip');
+      $('timerStatus').textContent = `Saved: ${timerRoute} · ${fmtDur(dur)}.`;
+      $('timerDisplay').textContent = '0:00'; $('timerRoute').value='';
+    }
+  };
+
+  $('exportBtn').onclick = () => {
+    const blob = new Blob([JSON.stringify(trips, null, 2)], {type:'application/json'});
+    const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = 'faraday-commute-trips.json'; a.click();
+  };
+  $('clearBtn').onclick = () => { if (confirm('Delete all logged trips?')){ trips = []; save(trips); refresh(); } };
+
+  $('date').value = new Date().toISOString().slice(0,10);
+  refresh();
+})();
+</script>
+</body>
+</html>
