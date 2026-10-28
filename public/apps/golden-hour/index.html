@@ -1,0 +1,279 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Golden Hour Finder — Faraday</title>
+<meta name="description" content="Faraday — Far a day. Free browser app for your car: today's sunrise, sunset, golden hour, and a countdown to the next golden hour.">
+<style>
+  :root{--bg:#eef2ff;--card:rgba(255,255,255,.82);--ink:#111827;--muted:#6b7280;--blue:#2563eb;--purple:#7c3aed;--amber:#f59e0b;--orange:#f97316}
+  *{box-sizing:border-box} body{margin:0;font-family:-apple-system,BlinkMacSystemFont,"SF Pro Text",Segoe UI,Roboto,Helvetica,Arial,sans-serif;color:var(--ink);background:linear-gradient(180deg,#dbeafe 0%,#ede9fe 45%,#fef3c7 100%);min-height:100vh}
+  .wrap{max-width:560px;margin:0 auto;padding:22px 16px 32px}
+  .brand{font-weight:800;letter-spacing:.02em} .brand span{color:var(--purple)} .tag{color:var(--muted);font-size:14px;margin:2px 0 18px}
+  .sun{width:96px;height:96px;margin:6px auto 10px;border-radius:28px;display:grid;place-items:center;font-size:52px;background:linear-gradient(145deg,#fde68a,#f59e0b 55%,#f97316);box-shadow:0 14px 30px rgba(249,115,22,.35),inset 0 2px 0 rgba(255,255,255,.7),inset 0 -6px 12px rgba(180,83,9,.25);transform:perspective(600px) rotateX(6deg)}
+  .card{background:var(--card);backdrop-filter:blur(12px);border:1px solid rgba(255,255,255,.9);border-radius:24px;padding:20px;box-shadow:0 12px 30px rgba(37,99,235,.12);margin:14px 0}
+  .pill{display:inline-block;padding:6px 12px;border-radius:999px;background:#fef3c7;color:#92400e;font-weight:700;font-size:13px}
+  .pill.live{background:#dcfce7;color:#166534}
+  h1{font-size:28px;line-height:1.1;margin:10px 0 4px} h2{font-size:16px;margin:0 0 8px} p{color:var(--muted);line-height:1.5}
+  .count{font-size:52px;font-weight:900;letter-spacing:-.03em;line-height:1;margin:10px 0 6px;font-variant-numeric:tabular-nums}
+  .big{font-size:22px;font-weight:800}
+  .grid{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+  .mini{background:#fff;border-radius:18px;padding:14px;border:1px solid #e5e7eb} .mini small{color:var(--muted);display:block;margin-bottom:4px} .mini b{font-size:19px}
+  button{width:100%;border:0;border-radius:18px;padding:16px;font-size:18px;font-weight:800;color:#fff;background:linear-gradient(135deg,var(--blue),var(--purple));box-shadow:0 10px 22px rgba(124,58,237,.35),inset 0 2px 0 rgba(255,255,255,.4);cursor:pointer}
+  button:active{transform:scale(.98)} .ghost{background:#fff;color:var(--ink);border:1px solid #e5e7eb;box-shadow:none;margin-top:10px}
+  .loc{font-size:14px;color:var(--muted);text-align:center} .tip{font-size:17px;color:#111827;line-height:1.5}
+  .foot{font-size:12px;color:var(--muted);text-align:center;line-height:1.5}
+  @media (prefers-color-scheme:dark){body{background:linear-gradient(180deg,#0f172a,#312e81 55%,#451a03);color:#f8fafc}.card{background:rgba(30,41,59,.82);border-color:rgba(255,255,255,.12)}.mini{background:#1e293b;border-color:#334155}.tip{color:#f8fafc}.ghost{background:#1e293b;color:#fff;border-color:#334155}}
+</style>
+</head>
+<body>
+<div style="position:fixed;top:10px;right:10px;z-index:9999;background:linear-gradient(180deg,#fde68a,#f59e0b);color:#111;font-weight:800;font-size:12px;letter-spacing:.06em;padding:8px 11px;border-radius:999px;box-shadow:0 8px 20px rgba(245,158,11,.35)">Beta — Test · Untested until user tests it</div>
+<main class="wrap">
+  <div class="brand">Faraday <span>— Far a day</span></div>
+  <p class="tag">Free browser app for your car. No install, no account, no paid service.</p>
+  <div class="sun" aria-hidden="true">☀️</div>
+
+  <section class="card" style="text-align:center">
+    <span class="pill" id="phasePill">Waiting for location…</span>
+    <h1 id="nextTitle">Next golden hour</h1>
+    <div class="count" id="countdown">--:--:--</div>
+    <p id="nextDetail">Tap below to use your location.</p>
+    <p class="loc" id="locLine">Location not set yet</p>
+  </section>
+
+  <button id="gpsBtn" type="button">📍 Use my location</button>
+  <button class="ghost" id="demoBtn" type="button">Try King of Prussia, PA</button>
+
+  <section class="card">
+    <h2>Today</h2>
+    <div class="grid">
+      <div class="mini"><small>🌅 Sunrise</small><b id="sunrise">—</b></div>
+      <div class="mini"><small>🌇 Sunset</small><b id="sunset">—</b></div>
+      <div class="mini"><small>✨ Morning golden hour</small><b id="morningGH">—</b></div>
+      <div class="mini"><small>✨ Evening golden hour</small><b id="eveningGH">—</b></div>
+    </div>
+    <p id="sourceLine" style="font-size:13px">Source: Open-Meteo (free, no key) when online. Falls back to an on-device solar calculation.</p>
+  </section>
+
+  <section class="card">
+    <h2>🧭 3D Car Orientation — Sun &amp; Sunset</h2>
+    <p style="font-size:14px">The car stays facing up. The world turns around it as you turn — the sun and the sunset direction move live, reactive to your car direction.</p>
+    <canvas id="scene" width="520" height="520" style="width:100%;height:auto;background:radial-gradient(circle at 50% 40%,#fef3c7,#dbeafe 70%);border-radius:20px;border:1px solid #e5e7eb"></canvas>
+    <div class="grid" style="margin-top:12px">
+      <div class="mini"><small>Car heading</small><b id="carHeading">—</b></div>
+      <div class="mini"><small>Sun direction</small><b id="sunAz">—</b></div>
+      <div class="mini"><small>Sunset direction</small><b id="sunsetAz">—</b></div>
+      <div class="mini"><small>Sun vs car</small><b id="sunRel">—</b></div>
+    </div>
+    <p id="orientNote" style="font-size:13px">Heading source: manual slider until GPS or compass is enabled.</p>
+    <button id="compassBtn" type="button">🧭 Enable compass</button>
+    <button class="ghost" id="gpsHeadingBtn" type="button">📍 Use GPS heading while driving</button>
+    <button class="ghost" id="simTurnBtn" type="button">↻ Simulate a turn</button>
+    <label style="display:block;margin-top:12px;font-size:14px;color:var(--muted)">Manual car heading (parked test): <span id="manualVal">0° — North</span><br>
+    <input id="manualHeading" type="range" min="0" max="359" value="0" style="width:100%"></label>
+    <p style="font-size:13px">How it works: sun azimuth is calculated on-device from your location and time. Sunset direction is the sun azimuth at sunset today. Relative angle = sun azimuth − car heading. On iPhone, Enable compass asks for motion permission — that is the device compass, not GPS. While driving, GPS heading (your direction of travel) is more stable than the phone compass.</p>
+  </section>
+
+  <section class="card">
+    <h2>📸 Street-photo tip</h2>
+    <p class="tip" id="tip">Golden light is low, warm, and long-shadowed. It makes ordinary streets look like a film still — shoot fast, the light changes every few minutes.</p>
+  </section>
+
+  <p class="foot">Glanceable in the car: one main action, big text, no typing while driving.<br>Golden hour = the hour after sunrise, and the hour before sunset.</p>
+</main>
+<script>
+const $ = id => document.getElementById(id);
+const fmtTime = d => d.toLocaleTimeString([], {hour:'numeric', minute:'2-digit'});
+const fmtRange = (a,b) => fmtTime(a) + ' – ' + fmtTime(b);
+let target = null, targetLabel = '', targetEnd = null, phase = 'waiting';
+
+// On-device fallback: NOAA-style solar calculation (approximate, no network needed)
+function sunTimesFallback(lat, lon, date){
+  const start = Date.UTC(date.getFullYear(), date.getMonth(), date.getDate());
+  const day = Math.floor((start - Date.UTC(date.getFullYear(),0,0)) / 86400000);
+  const frac = 2*Math.PI/364 * (day - 1 + (date.getHours()-12)/24);
+  const eq = 229.18*(0.000075 + 0.001868*Math.cos(frac) - 0.032077*Math.sin(frac) - 0.014615*Math.cos(2*frac) - 0.040849*Math.sin(2*frac));
+  const decl = 0.006918 - 0.399912*Math.cos(frac) + 0.070257*Math.sin(frac) - 0.006758*Math.cos(2*frac) + 0.000907*Math.sin(2*frac) - 0.002697*Math.cos(3*frac) + 0.00148*Math.sin(3*frac);
+  const latR = lat*Math.PI/180;
+  const cosH = (Math.cos(1.5853) - Math.sin(latR)*Math.sin(decl)) / (Math.cos(latR)*Math.cos(decl));
+  const H = Math.acos(Math.min(1, Math.max(-1, cosH))) * 180/Math.PI / 15; // hours
+  const noon = 720 - 4*lon - eq; // minutes UTC, approx, using local date's UTC midnight as anchor
+  const mk = mins => { const d = new Date(start); d.setUTCMinutes(mins); return d; };
+  // Convert UTC minutes to local time by using the date's timezone offset at noon
+  const offset = -new Date(start + 12*3600000).getTimezoneOffset();
+  return { sunrise: mk(noon - H*60 - offset), sunset: mk(noon + H*60 - offset) };
+}
+
+async function load(lat, lon, label){
+  $('locLine').textContent = label + '  •  ' + lat.toFixed(4) + ', ' + lon.toFixed(4);
+  let days = null;
+  try {
+    const url = 'https://api.open-meteo.com/v1/forecast?latitude=' + encodeURIComponent(lat) + '&longitude=' + encodeURIComponent(lon) + '&daily=sunrise,sunset&timezone=auto&forecast_days=2';
+    const r = await fetch(url);
+    const j = await r.json();
+    if (j.daily && j.daily.sunrise && j.daily.sunrise.length) {
+      days = j.daily.sunrise.map((s,i) => ({ sunrise: new Date(s), sunset: new Date(j.daily.sunset[i]) }));
+      $('sourceLine').textContent = 'Source: Open-Meteo (free, no key). Timezone: ' + (j.timezone || 'auto') + '.';
+    }
+  } catch(e) { /* fall through to on-device calc */ }
+  if (!days) {
+    const today = new Date(), tomorrow = new Date(); tomorrow.setDate(today.getDate()+1);
+    days = [sunTimesFallback(lat, lon, today), sunTimesFallback(lat, lon, tomorrow)];
+    $('sourceLine').textContent = 'Source: on-device solar calculation (offline fallback, approximate).';
+  }
+  render(days);
+}
+
+function tipFor(ph){
+  if (ph === 'in-morning' || ph === 'in-evening') return 'You are in golden hour right now. Shoot into the light for silhouettes, or turn around for warm light on faces and brick. Expose for the sky, let shadows go dark — and keep moving, the light changes every few minutes.';
+  if (ph === 'before-morning') return 'Arrive 15 minutes early. Set up facing east, and watch the street wake up: long shadows, warm shop windows, and one strong subject walking through the light beats a wide empty scene.';
+  if (ph === 'before-evening') return 'For the evening run, find your spot before the hour starts. Backlight a person or a bike, keep the sun just out of frame, and use puddles, windows, and car paint as warm reflectors.';
+  return 'Golden hour is done for today. Plan tomorrow: pick one east-facing street for morning, one west-facing street for evening, and go back to the same spot — series beat one-offs.';
+}
+
+function render(days){
+  const now = new Date();
+  const today = days[0];
+  if (typeof curSunset !== 'undefined') curSunset = today.sunset;
+  const morning = { start: today.sunrise, end: new Date(today.sunrise.getTime() + 3600000) };
+  const evening = { start: new Date(today.sunset.getTime() - 3600000), end: today.sunset };
+  $('sunrise').textContent = fmtTime(today.sunrise);
+  $('sunset').textContent = fmtTime(today.sunset);
+  $('morningGH').textContent = fmtRange(morning.start, morning.end);
+  $('eveningGH').textContent = fmtRange(evening.start, evening.end);
+
+  if (now >= morning.start && now <= morning.end) { phase='in-morning'; target=morning.end; targetLabel='Morning golden hour ends in'; }
+  else if (now < morning.start) { phase='before-morning'; target=morning.start; targetLabel='Morning golden hour starts in'; }
+  else if (now >= evening.start && now <= evening.end) { phase='in-evening'; target=evening.end; targetLabel='Evening golden hour ends in'; }
+  else if (now < evening.start) { phase='before-evening'; target=evening.start; targetLabel='Evening golden hour starts in'; }
+  else {
+    const tm = days[1] ? days[1].sunrise : new Date(today.sunrise.getTime() + 86400000);
+    phase='after'; target=tm; targetLabel='Tomorrow’s morning golden hour starts in';
+  }
+  targetEnd = target;
+  $('nextTitle').textContent = targetLabel.replace(' starts in','').replace(' ends in','');
+  $('nextDetail').textContent = targetLabel + ' — ' + fmtTime(target);
+  $('phasePill').textContent = (phase.startsWith('in') ? '● LIVE — In golden hour now' : 'Next golden hour');
+  $('phasePill').className = 'pill' + (phase.startsWith('in') ? ' live' : '');
+  $('tip').textContent = tipFor(phase);
+}
+
+function tick(){
+  if (!targetEnd) return;
+  let s = Math.max(0, Math.floor((targetEnd - new Date())/1000));
+  const h = String(Math.floor(s/3600)).padStart(2,'0'), m = String(Math.floor(s%3600/60)).padStart(2,'0'), sec = String(s%60).padStart(2,'0');
+  $('countdown').textContent = h + ':' + m + ':' + sec;
+  if (s === 0) $('phasePill').textContent = 'Golden hour is changing — tap Use my location to refresh';
+}
+setInterval(tick, 1000);
+
+$('gpsBtn').onclick = () => {
+  $('phasePill').textContent = 'Finding you…';
+  if (!navigator.geolocation) { $('phasePill').textContent = 'GPS not available — try the demo below'; return; }
+  navigator.geolocation.getCurrentPosition(
+    p => load(p.coords.latitude, p.coords.longitude, 'Your location'),
+    () => { $('phasePill').textContent = 'Location blocked — try the demo below'; load(40.0884, -75.3785, 'Demo: King of Prussia, PA'); },
+    { enableHighAccuracy: true, timeout: 10000, maximumAge: 60000 }
+  );
+};
+$('demoBtn').onclick = () => load(40.0884, -75.3785, 'Demo: King of Prussia, PA');
+// Show something useful immediately, before GPS is granted
+load(40.0884, -75.3785, 'Demo: King of Prussia, PA');
+
+// --- 3D orientation: car, sun, sunset, reactive to car heading ---
+let carHeading = 0, headingSource = 'manual', curLat = 40.0884, curLon = -75.3785, curSunset = null, simTimer = null;
+const cardinals = ['N','NE','E','SE','S','SW','W','NW'];
+const card = h => cardinals[Math.round(((h%360)+360)%360 / 45) % 8];
+const fmtDeg = h => Math.round(((h%360)+360)%360) + '° ' + card(h);
+function sunPosition(lat, lon, date){
+  const start = Date.UTC(date.getFullYear(), date.getMonth(), date.getDate());
+  const day = Math.floor((start - Date.UTC(date.getFullYear(),0,0)) / 86400000);
+  const frac = 2*Math.PI/364 * (day - 1 + (date.getHours()-12)/24);
+  const eq = 229.18*(0.000075 + 0.001868*Math.cos(frac) - 0.032077*Math.sin(frac) - 0.014615*Math.cos(2*frac) - 0.040849*Math.sin(2*frac));
+  const decl = 0.006918 - 0.399912*Math.cos(frac) + 0.070257*Math.sin(frac) - 0.006758*Math.cos(2*frac) + 0.000907*Math.sin(2*frac) - 0.002697*Math.cos(3*frac) + 0.00148*Math.sin(3*frac);
+  const utcMin = date.getUTCHours()*60 + date.getUTCMinutes() + date.getUTCSeconds()/60;
+  const solarMin = utcMin + eq + 4*lon;
+  const haDeg = solarMin/4 - 180; // hour angle, degrees
+  const ha = haDeg*Math.PI/180, latR = lat*Math.PI/180;
+  const elev = Math.asin(Math.sin(latR)*Math.sin(decl) + Math.cos(latR)*Math.cos(decl)*Math.cos(ha));
+  let az = Math.atan2(Math.sin(ha), Math.cos(ha)*Math.sin(latR) - Math.tan(decl)*Math.cos(latR));
+  az = (az*180/Math.PI + 180) % 360; // clockwise from north
+  return { azimuth: az, elevation: elev*180/Math.PI };
+}
+function relAngle(a){ let r = ((a%360)+540)%360-180; return r; }
+function drawScene(){
+  const c = $('scene'); if(!c) return; const ctx = c.getContext('2d');
+  const W=c.width, H=c.height, cx=W/2, cy=H/2, R=200;
+  ctx.clearRect(0,0,W,H);
+  const now = new Date();
+  const sun = sunPosition(curLat, curLon, now);
+  const sunsetAz = curSunset ? sunPosition(curLat, curLon, curSunset).azimuth : 270;
+  // Ground disc, tilted 3D feel: outer ring + ellipse shadow
+  ctx.beginPath(); ctx.ellipse(cx, cy+18, R, R*0.92, 0, 0, Math.PI*2); ctx.fillStyle='rgba(0,0,0,0.08)'; ctx.fill();
+  ctx.beginPath(); ctx.arc(cx, cy, R, 0, Math.PI*2); ctx.fillStyle='#fff8e1'; ctx.fill(); ctx.strokeStyle='#e5e7eb'; ctx.lineWidth=2; ctx.stroke();
+  // Compass ring, rotates with world: labels at absolute azimuth - carHeading
+  ctx.save(); ctx.translate(cx, cy); ctx.rotate(-carHeading*Math.PI/180);
+  for(let a=0;a<360;a+=15){
+    const rad=a*Math.PI/180, major=a%90===0;
+    ctx.beginPath(); ctx.moveTo(Math.sin(rad)*(R-18), -Math.cos(rad)*(R-18)); ctx.lineTo(Math.sin(rad)*(R-6), -Math.cos(rad)*(R-6)); ctx.strokeStyle=major?'#111827':'#9ca3af'; ctx.lineWidth=major?3:1; ctx.stroke();
+    if(major){ ctx.fillStyle='#111827'; ctx.font='bold 22px sans-serif'; ctx.textAlign='center'; ctx.textBaseline='middle'; const lbl=['N','E','S','W'][a/90]; ctx.fillText(lbl, Math.sin(rad)*(R-38), -Math.cos(rad)*(R-38)); }
+  }
+  // Sunset direction arrow on ring
+  const sa = sunsetAz*Math.PI/180;
+  ctx.beginPath(); ctx.moveTo(Math.sin(sa)*(R-55), -Math.cos(sa)*(R-55)); ctx.lineTo(Math.sin(sa)*(R-18), -Math.cos(sa)*(R-18)); ctx.strokeStyle='#f97316'; ctx.lineWidth=6; ctx.lineCap='round'; ctx.stroke();
+  ctx.fillStyle='#f97316'; ctx.font='bold 16px sans-serif'; ctx.textAlign='center'; ctx.fillText('SUNSET', Math.sin(sa)*(R-72), -Math.cos(sa)*(R-72));
+  ctx.restore();
+  // Sun: relative angle, distance shrinks as elevation rises (3D height illusion)
+  const relSun = sun.azimuth - carHeading, sunRad = relSun*Math.PI/180;
+  const sunDist = R*0.72 * Math.max(0.35, 1 - Math.max(0, sun.elevation)/90*0.5);
+  const sx = cx + Math.sin(sunRad)*sunDist, sy = cy - Math.cos(sunRad)*sunDist - Math.max(0, sun.elevation)*0.6;
+  ctx.beginPath(); ctx.arc(sx, sy+8, 28, 0, Math.PI*2); ctx.fillStyle='rgba(0,0,0,0.12)'; ctx.fill();
+  const g = ctx.createRadialGradient(sx, sy, 4, sx, sy, 32); g.addColorStop(0,'#fef08a'); g.addColorStop(0.6,'#f59e0b'); g.addColorStop(1,'#f97316');
+  ctx.beginPath(); ctx.arc(sx, sy, 28, 0, Math.PI*2); ctx.fillStyle=g; ctx.fill();
+  ctx.fillStyle='#111827'; ctx.font='bold 15px sans-serif'; ctx.textAlign='center'; ctx.fillText('SUN', sx, sy+48);
+  // 3D car in centre, facing up (north of screen), with side/shadow for depth
+  ctx.save(); ctx.translate(cx, cy);
+  ctx.fillStyle='rgba(0,0,0,0.18)'; ctx.beginPath(); ctx.ellipse(6, 58, 42, 12, 0, 0, Math.PI*2); ctx.fill();
+  ctx.fillStyle='#2563eb'; ctx.strokeStyle='#1e3a8a'; ctx.lineWidth=2;
+  // body with 3D side offset
+  ctx.beginPath(); ctx.roundRect(-28, -62, 56, 118, 14); ctx.fill(); ctx.stroke();
+  ctx.fillStyle='#93c5fd'; ctx.beginPath(); ctx.roundRect(-20, -38, 40, 34, 8); ctx.fill();
+  ctx.fillStyle='#1e293b'; ctx.beginPath(); ctx.roundRect(-20, 8, 40, 22, 6); ctx.fill();
+  ctx.fillStyle='#fef08a'; ctx.beginPath(); ctx.arc(-14, -62, 7, 0, Math.PI*2); ctx.arc(14, -62, 7, 0, Math.PI*2); ctx.fill();
+  ctx.fillStyle='#111827'; ctx.font='bold 18px sans-serif'; ctx.textAlign='center'; ctx.fillText('▲', 0, -72);
+  ctx.fillStyle='#fff'; ctx.font='bold 13px sans-serif'; ctx.fillText('CAR', 0, 48);
+  ctx.restore();
+  // Readouts
+  $('carHeading').textContent = fmtDeg(carHeading) + ' (' + headingSource + ')';
+  $('sunAz').textContent = fmtDeg(sun.azimuth) + ' · elev ' + Math.round(sun.elevation) + '°';
+  $('sunsetAz').textContent = fmtDeg(sunsetAz);
+  const rel = relAngle(sun.azimuth - carHeading);
+  $('sunRel').textContent = (rel===0?'straight ahead':(rel>0?Math.abs(Math.round(rel))+'° right':'')+(rel<0?Math.abs(Math.round(rel))+'° left':'')) || 'straight ahead';
+  $('orientNote').textContent = 'Heading source: ' + headingSource + '. Sun is ' + Math.abs(Math.round(rel)) + '° ' + (rel>=0?'to your right':'to your left') + ' of the car nose. Sunset is ' + Math.abs(Math.round(relAngle(sunsetAz-carHeading))) + '° ' + (relAngle(sunsetAz-carHeading)>=0?'right':'left') + '.';
+}
+const origLoad = load;
+load = async function(lat, lon, label){ curLat=lat; curLon=lon; await origLoad(lat, lon, label); const el=$('sunset'); if(el && el.textContent!=='—'){ /* sunset time parsed from render via today */ } drawScene(); };
+// Capture sunset time from render by wrapping: re-read sunset element time is display only, so use fallback sunset for azimuth
+setInterval(drawScene, 1000); drawScene();
+$('manualHeading').oninput = e => { if(simTimer){clearInterval(simTimer); simTimer=null; $('simTurnBtn').textContent='↻ Simulate a turn';} carHeading = +e.target.value; headingSource='manual'; $('manualVal').textContent = fmtDeg(carHeading); drawScene(); };
+$('compassBtn').onclick = async () => {
+  try{
+    if(typeof DeviceOrientationEvent !== 'undefined' && typeof DeviceOrientationEvent.requestPermission === 'function'){ const r = await DeviceOrientationEvent.requestPermission(); if(r!=='granted'){ $('orientNote').textContent='Compass permission denied — use GPS heading or the manual slider.'; return; } }
+    window.addEventListener('deviceorientationabsolute', ev => { if(ev.webkitCompassHeading!=null){ carHeading=ev.webkitCompassHeading; headingSource='compass (iOS)'; } else if(ev.alpha!=null){ carHeading=360-ev.alpha; headingSource='compass'; } drawScene(); });
+    window.addEventListener('deviceorientation', ev => { if(ev.webkitCompassHeading!=null){ carHeading=ev.webkitCompassHeading; headingSource='compass (iOS)'; drawScene(); } });
+    $('orientNote').textContent='Compass enabled — turn the phone/car and watch the sun move around the car.';
+  }catch(e){ $('orientNote').textContent='Compass not available in this browser — use GPS heading or the manual slider.'; }
+};
+$('gpsHeadingBtn').onclick = () => {
+  if(!navigator.geolocation){ $('orientNote').textContent='GPS not available.'; return; }
+  navigator.geolocation.watchPosition(p => { if(p.coords.heading!=null && p.coords.speed>1){ carHeading=p.coords.heading; headingSource='GPS (driving)'; drawScene(); } }, ()=>{}, {enableHighAccuracy:true});
+  $('orientNote').textContent='GPS heading enabled — drive above walking speed and the car direction will follow your travel direction.';
+};
+$('simTurnBtn').onclick = () => {
+  if(simTimer){ clearInterval(simTimer); simTimer=null; $('simTurnBtn').textContent='↻ Simulate a turn'; return; }
+  headingSource='simulated turn'; $('simTurnBtn').textContent='Stop simulation';
+  simTimer = setInterval(()=>{ carHeading=(carHeading+2)%360; $('manualHeading').value=carHeading; $('manualVal').textContent=fmtDeg(carHeading); drawScene(); }, 100);
+};
+</script>
+</body>
+</html>
