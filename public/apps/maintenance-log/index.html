@@ -1,0 +1,280 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#0b0f14">
+<title>Faraday — Maintenance Log</title>
+<style>
+  :root{
+    --bg:#0b0f14; --card:rgba(255,255,255,.08); --card2:rgba(255,255,255,.12);
+    --text:#f5f1e8; --muted:#b8b2a3; --blue:#4da3ff; --purple:#8b7bff;
+    --amber:#f59e0b; --green:#34c759; --red:#ff453a;
+  }
+  *{box-sizing:border-box}
+  body{
+    margin:0; min-height:100vh; color:var(--text);
+    font-family:-apple-system,BlinkMacSystemFont,"SF Pro Text",Segoe UI,Roboto,Helvetica,Arial,sans-serif;
+    background:radial-gradient(1200px 600px at 50% -10%, #2b3a5e 0%, var(--bg) 55%);
+    display:flex; flex-direction:column; align-items:center; padding:18px 14px 32px;
+  }
+  .wrap{width:min(560px,100%)}
+  header{display:flex; justify-content:space-between; align-items:flex-start; gap:12px}
+  header h1{font-size:20px; margin:0; letter-spacing:.02em}
+  header p{margin:4px 0 0; color:var(--muted); font-size:13px; line-height:1.45}
+  .beta{
+    flex:none; text-align:center; font-size:12px; font-weight:800; letter-spacing:.06em;
+    padding:9px 12px; border-radius:999px; color:#101010;
+    background:linear-gradient(180deg,#ffe9a3,#f59e0b);
+    box-shadow:0 6px 18px rgba(245,158,11,.35), inset 0 1px 0 rgba(255,255,255,.7);
+  }
+  .beta small{display:block; font-size:10px; font-weight:700; letter-spacing:.02em; margin-top:2px}
+  .card{
+    background:var(--card); border:1px solid rgba(255,255,255,.12); border-radius:22px; padding:16px;
+    box-shadow:0 10px 24px rgba(0,0,0,.25), inset 0 1px 0 rgba(255,255,255,.15); margin-top:14px;
+  }
+  .card h2{font-size:16px; margin:0 0 10px}
+  .card p{color:var(--muted); font-size:13px; line-height:1.5; margin:6px 0}
+  label{display:block; color:var(--muted); font-size:11px; letter-spacing:.1em; text-transform:uppercase; margin:12px 0 6px}
+  input,select,textarea{
+    width:100%; border:1px solid rgba(255,255,255,.18); border-radius:14px; padding:13px 12px;
+    font-size:16px; color:var(--text); background:rgba(255,255,255,.08); font-family:inherit;
+  }
+  textarea{resize:vertical; min-height:64px}
+  .grid{display:grid; grid-template-columns:1fr 1fr; gap:12px}
+  button{
+    width:100%; border:0; border-radius:18px; padding:15px 10px; font-size:16px; font-weight:800; cursor:pointer;
+    color:#fff; background:linear-gradient(180deg,var(--blue),#2b6fd6);
+    box-shadow:0 10px 22px rgba(77,163,255,.3), inset 0 1px 0 rgba(255,255,255,.5); margin-top:14px;
+  }
+  button.secondary{background:rgba(255,255,255,.12); box-shadow:inset 0 1px 0 rgba(255,255,255,.2)}
+  button:active{transform:scale(.98); opacity:.9}
+  .entry{border-top:1px solid rgba(255,255,255,.12); padding:14px 0}
+  .entry:first-of-type{border-top:0; padding-top:2px}
+  .entry:last-child{padding-bottom:0}
+  .entry-head{display:flex; justify-content:space-between; gap:10px; align-items:baseline}
+  .entry-head strong{font-size:16px}
+  .entry-head span{color:var(--muted); font-size:13px}
+  .meta{color:var(--muted); font-size:13px; margin-top:4px; line-height:1.5}
+  .notes{color:var(--text); font-size:14px; margin-top:6px; line-height:1.5}
+  .del{width:auto; padding:8px 12px; font-size:13px; margin-top:8px; background:rgba(255,69,58,.18); box-shadow:none; color:#ffb4ab}
+  .reminder{display:flex; justify-content:space-between; gap:10px; padding:10px 0; border-top:1px solid rgba(255,255,255,.12)}
+  .reminder:first-of-type{border-top:0}
+  .reminder strong{font-size:14px}
+  .reminder span{font-size:13px; color:var(--muted); text-align:right}
+  .due{color:var(--red) !important; font-weight:800}
+  .soon{color:var(--amber) !important; font-weight:700}
+  .ok{color:var(--green) !important; font-weight:700}
+  .empty{text-align:center; color:var(--muted); padding:18px 0 6px; line-height:1.5}
+  .note{color:var(--muted); font-size:12px; line-height:1.5; text-align:center; margin-top:16px}
+  @media (max-width:420px){ .grid{grid-template-columns:1fr} }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <div>
+      <h1>Faraday — Maintenance Log</h1>
+      <p>Far a day · Browser only · No install · Data stays in this browser</p>
+    </div>
+    <div class="beta" role="status" aria-label="Beta test version">Beta — Test<small>Untested — awaiting user testing</small></div>
+  </header>
+
+  <div class="card">
+    <p><strong style="color:var(--text)">Beta — Test:</strong> this app is untested by the user until he tests it. Please test adding, listing and deleting entries before relying on it.</p>
+    <label for="odo">Current mileage (for reminders)</label>
+    <input id="odo" type="number" inputmode="numeric" min="0" placeholder="e.g. 12000">
+  </div>
+
+  <section class="card" aria-label="Add maintenance entry">
+    <h2>Add entry</h2>
+    <label for="date">Date</label>
+    <input id="date" type="date">
+    <label for="type">Type</label>
+    <select id="type">
+      <option>Tire rotation</option>
+      <option>Cabin filter</option>
+      <option>Wipers</option>
+      <option>Brake fluid</option>
+      <option>12V battery</option>
+      <option>Tire replacement</option>
+      <option>Alignment</option>
+      <option>General service</option>
+      <option>Other</option>
+    </select>
+    <div class="grid">
+      <div>
+        <label for="mileage">Mileage at service</label>
+        <input id="mileage" type="number" inputmode="numeric" min="0" placeholder="e.g. 12000">
+      </div>
+      <div>
+        <label for="cost">Cost (optional)</label>
+        <input id="cost" type="number" inputmode="decimal" min="0" step="0.01" placeholder="e.g. 45.00">
+      </div>
+    </div>
+    <label for="notes">Notes (optional)</label>
+    <textarea id="notes" placeholder="e.g. Rotated at Costco, front tires to rear"></textarea>
+    <button id="addBtn">＋ Add entry</button>
+    <p id="formMsg" role="status"></p>
+  </section>
+
+  <section class="card" aria-label="Upcoming reminders">
+    <h2>Upcoming reminders</h2>
+    <p>Simple rules from your last entry of each type. Set current mileage above for mileage reminders.</p>
+    <div id="reminders"></div>
+  </section>
+
+  <section class="card" aria-label="Maintenance history">
+    <h2>History — newest first</h2>
+    <div id="list"></div>
+    <button class="secondary" id="exportBtn">Export as JSON</button>
+    <button class="secondary" id="clearBtn">Clear all entries</button>
+  </section>
+
+  <p class="note">Works in a phone browser mounted in any car, and in a Tesla browser. Nothing is uploaded — entries live in this browser only (localStorage). Export regularly — a Tesla browser may clear it.</p>
+</div>
+
+<script>
+(function(){
+  const $ = id => document.getElementById(id);
+  const KEY = 'faraday-maintenance-log-v1';
+  const ODO_KEY = 'faraday-maintenance-odo-v1';
+  // Simple, transparent reminder intervals. Months are calendar months from last service.
+  const INTERVALS = {
+    'Tire rotation': { miles: 6250, months: 6 },
+    'Cabin filter': { miles: null, months: 24 },
+    'Wipers': { miles: null, months: 12 },
+    'Brake fluid': { miles: null, months: 24 },
+    '12V battery': { miles: null, months: 48 },
+    'Tire replacement': { miles: 40000, months: null },
+    'Alignment': { miles: 12000, months: 12 },
+    'General service': { miles: 10000, months: 12 },
+    'Other': { miles: null, months: null },
+  };
+  function load(){
+    try { return JSON.parse(localStorage.getItem(KEY) || '[]'); } catch(e){ return []; }
+  }
+  function save(entries){ localStorage.setItem(KEY, JSON.stringify(entries)); }
+  function fmtMoney(n){
+    if (n === '' || n == null || isNaN(n)) return '';
+    return '$' + Number(n).toLocaleString(undefined, {minimumFractionDigits:2, maximumFractionDigits:2});
+  }
+  function fmtMiles(n){
+    if (n === '' || n == null || isNaN(n)) return '';
+    return Number(n).toLocaleString() + ' mi';
+  }
+  function addMonths(dateStr, months){
+    const d = new Date(dateStr + 'T00:00:00');
+    d.setMonth(d.getMonth() + months);
+    return d;
+  }
+  function fmtDate(d){ return d.toLocaleDateString(undefined, {year:'numeric', month:'short', day:'numeric'}); }
+
+  function render(){
+    const entries = load().slice().sort((a,b) => (b.date || '').localeCompare(a.date || '') || (b.created||0) - (a.created||0));
+    const list = $('list');
+    if (!entries.length){
+      list.innerHTML = '<p class="empty">No entries yet.<br>Add your first service above — e.g. tire rotation.</p>';
+    } else {
+      list.innerHTML = '';
+      entries.forEach(e => {
+        const div = document.createElement('div');
+        div.className = 'entry';
+        const meta = [fmtMiles(e.mileage), fmtMoney(e.cost)].filter(Boolean).join(' · ');
+        div.innerHTML = '<div class="entry-head"><strong></strong><span></span></div>' +
+          (meta ? '<div class="meta"></div>' : '') +
+          (e.notes ? '<div class="notes"></div>' : '');
+        div.querySelector('strong').textContent = e.type || 'Other';
+        div.querySelector('.entry-head span').textContent = e.date ? fmtDate(new Date(e.date + 'T00:00:00')) : 'No date';
+        if (meta) div.querySelector('.meta').textContent = meta;
+        if (e.notes) div.querySelector('.notes').textContent = e.notes;
+        const del = document.createElement('button');
+        del.className = 'del'; del.textContent = 'Delete';
+        del.onclick = () => { save(load().filter(x => x.id !== e.id)); render(); };
+        div.appendChild(del);
+        list.appendChild(div);
+      });
+    }
+    // Reminders
+    const odo = parseFloat($('odo').value);
+    const rem = $('reminders');
+    rem.innerHTML = '';
+    Object.keys(INTERVALS).forEach(type => {
+      const rule = INTERVALS[type];
+      if (!rule.miles && !rule.months) return;
+      const last = entries.find(e => e.type === type);
+      if (!last){
+        const row = document.createElement('div');
+        row.className = 'reminder';
+        row.innerHTML = '<strong></strong><span>No entry yet</span>';
+        row.querySelector('strong').textContent = type;
+        rem.appendChild(row);
+        return;
+      }
+      const parts = [];
+      let cls = 'ok';
+      if (rule.miles && !isNaN(odo) && last.mileage !== '' && last.mileage != null){
+        const dueAt = Number(last.mileage) + rule.miles;
+        const left = dueAt - odo;
+        if (left <= 0){ parts.push('Due now — ' + fmtMiles(dueAt)); cls = 'due'; }
+        else if (left <= 1000){ parts.push(left.toLocaleString() + ' mi left — due ' + fmtMiles(dueAt)); cls = 'soon'; }
+        else { parts.push('Due ' + fmtMiles(dueAt) + ' (' + left.toLocaleString() + ' mi left)'); }
+      }
+      if (rule.months && last.date){
+        const dueDate = addMonths(last.date, rule.months);
+        const now = new Date(); now.setHours(0,0,0,0);
+        if (dueDate <= now){ parts.push('Date due ' + fmtDate(dueDate)); cls = 'due'; }
+        else {
+          const days = Math.round((dueDate - now) / 86400000);
+          if (days <= 30) cls = cls === 'due' ? 'due' : 'soon';
+          parts.push('Due ' + fmtDate(dueDate) + (days <= 90 ? ' (' + days + ' days)' : ''));
+        }
+      }
+      const row = document.createElement('div');
+      row.className = 'reminder';
+      row.innerHTML = '<strong></strong><span></span>';
+      row.querySelector('strong').textContent = type;
+      const s = row.querySelector('span');
+      s.textContent = parts.join(' · ') || 'No rule';
+      s.className = cls;
+      rem.appendChild(row);
+    });
+  }
+
+  $('date').value = new Date().toISOString().slice(0,10);
+  $('odo').value = localStorage.getItem(ODO_KEY) || '';
+  $('odo').addEventListener('input', () => { localStorage.setItem(ODO_KEY, $('odo').value); render(); });
+
+  $('addBtn').onclick = () => {
+    const date = $('date').value;
+    const type = $('type').value;
+    if (!date){ $('formMsg').textContent = 'Please pick a date.'; return; }
+    const entries = load();
+    entries.push({
+      id: Date.now() + '-' + Math.random().toString(36).slice(2,7),
+      created: Date.now(), date, type,
+      mileage: $('mileage').value === '' ? null : Number($('mileage').value),
+      cost: $('cost').value === '' ? null : Number($('cost').value),
+      notes: $('notes').value.trim()
+    });
+    save(entries);
+    $('mileage').value = ''; $('cost').value = ''; $('notes').value = '';
+    $('formMsg').textContent = 'Saved: ' + type + ' on ' + date + '.';
+    render();
+  };
+  $('exportBtn').onclick = () => {
+    const blob = new Blob([JSON.stringify(load(), null, 2)], {type:'application/json'});
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(blob); a.download = 'faraday-maintenance-log.json'; a.click();
+    URL.revokeObjectURL(a.href);
+  };
+  $('clearBtn').onclick = () => {
+    if (confirm('Clear all maintenance entries? This cannot be undone.')){
+      save([]); render();
+    }
+  };
+  render();
+})();
+</script>
+</body>
+</html>

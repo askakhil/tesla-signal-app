@@ -1,0 +1,175 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#0b1f14">
+<title>Faraday — Eco Driving Score</title>
+<style>
+  :root{--bg:#0b1f14;--card:rgba(255,255,255,.08);--text:#f2f7f2;--muted:#a8b5aa;--green:#34d399;--amber:#fbbf24;--red:#f87171;--blue:#4da3ff}
+  *{box-sizing:border-box}
+  body{margin:0;min-height:100vh;color:var(--text);font-family:-apple-system,BlinkMacSystemFont,"SF Pro Text",Segoe UI,Roboto,Helvetica,Arial,sans-serif;background:radial-gradient(1000px 500px at 50% -10%,#1e4a2e 0%,var(--bg) 55%);padding:18px 14px 30px;display:flex;flex-direction:column;align-items:center}
+  .wrap{width:min(540px,100%)}
+  header{display:flex;justify-content:space-between;align-items:flex-start;gap:10px}
+  h1{font-size:18px;margin:0} p{color:var(--muted);font-size:13px;line-height:1.5;margin:6px 0}
+  .beta{flex:none;text-align:center;background:linear-gradient(180deg,#fde68a,#f59e0b);color:#111;padding:8px 11px;border-radius:999px;font-size:12px;font-weight:900;letter-spacing:.06em;box-shadow:0 8px 20px rgba(245,158,11,.35),inset 0 1px 0 #fff}
+  .beta span{display:block;font-size:10px;font-weight:700;letter-spacing:0}
+  .score-card{text-align:center;background:var(--card);border:1px solid rgba(255,255,255,.14);border-radius:28px;padding:22px 16px;margin:16px 0;box-shadow:0 16px 32px rgba(0,0,0,.3),inset 0 1px 0 rgba(255,255,255,.15)}
+  .ring{width:170px;height:170px;margin:0 auto;border-radius:50%;display:grid;place-items:center;background:conic-gradient(var(--green) 0deg,rgba(255,255,255,.12) 0deg);position:relative}
+  .ring::before{content:"";position:absolute;inset:12px;border-radius:50%;background:#12291b}
+  .ring b{position:relative;font-size:56px;line-height:1}
+  .ring span{position:relative;display:block;font-size:12px;color:var(--muted);letter-spacing:.12em;text-transform:uppercase}
+  .grade{font-size:20px;font-weight:800;margin-top:10px}
+  .grid{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+  .card{background:var(--card);border:1px solid rgba(255,255,255,.12);border-radius:22px;padding:14px 16px;box-shadow:0 10px 24px rgba(0,0,0,.25),inset 0 1px 0 rgba(255,255,255,.12)}
+  .card label{display:block;color:var(--muted);font-size:11px;letter-spacing:.1em;text-transform:uppercase}
+  .card strong{display:block;font-size:24px;margin-top:4px;font-variant-numeric:tabular-nums}
+  .card span{color:var(--muted);font-size:12px}
+  .bar{height:10px;background:rgba(255,255,255,.12);border-radius:999px;overflow:hidden;margin-top:8px}
+  .bar i{display:block;height:100%;background:linear-gradient(90deg,var(--green),#a3e635);border-radius:999px;transition:width .3s}
+  button{flex:1;border:0;border-radius:18px;padding:15px 10px;font-size:16px;font-weight:800;cursor:pointer;color:#fff;background:linear-gradient(180deg,var(--green),#059669);box-shadow:0 10px 22px rgba(52,211,153,.3),inset 0 1px 0 rgba(255,255,255,.5)}
+  button.secondary{background:rgba(255,255,255,.12);box-shadow:inset 0 1px 0 rgba(255,255,255,.2)}
+  button:active{transform:scale(.98)}
+  .controls{display:flex;gap:10px;margin-top:14px}
+  .seg{display:flex;background:rgba(255,255,255,.1);border-radius:16px;padding:4px;margin-top:12px}
+  .seg button{background:transparent;box-shadow:none;padding:10px;font-size:14px;color:var(--muted)}
+  .seg button.active{background:#fff;color:#111;box-shadow:0 4px 12px rgba(0,0,0,.25)}
+  .tip{background:rgba(52,211,153,.12);border:1px solid rgba(52,211,153,.35);border-radius:18px;padding:14px 16px;margin-top:14px}
+  .hist{margin-top:18px}.hist h2{font-size:16px}
+  .row{display:flex;justify-content:space-between;gap:10px;padding:12px 4px;border-bottom:1px solid rgba(255,255,255,.1);font-size:14px}
+  .row b{font-size:18px}.row span{color:var(--muted);font-size:12px}
+  .note{color:var(--muted);font-size:12px;line-height:1.5;text-align:center;margin-top:14px}
+</style>
+</head>
+<body><div class="wrap">
+<header>
+  <div><h1>Faraday — Eco Driving Score</h1><p>Far a day · Browser only · No install · Data stays in this browser</p></div>
+  <div class="beta" aria-label="Beta test badge">BETA — TEST<span>Untested · user test pending</span></div>
+</header>
+<p style="text-align:center;background:rgba(251,191,36,.14);border:1px solid rgba(251,191,36,.4);border-radius:14px;padding:10px 12px">⚠️ Beta — Test: this app has not been tested by the user yet. Scores are a guide only — keep eyes on the road.</p>
+
+<div class="score-card">
+  <div class="ring" id="ring"><div><b id="scoreBig">100</b><span>Score / 100</span></div></div>
+  <div class="grade" id="grade">Excellent — smooth so far</div>
+  <p id="status">Tap Start drive — GPS will begin when you allow location.</p>
+</div>
+
+<div class="grid">
+  <div class="card"><label>Smooth accel.</label><strong id="accelScore">100</strong><div class="bar"><i id="accelBar" style="width:100%"></i></div><span id="harshAccel">0 harsh accelerations</span></div>
+  <div class="card"><label>Smooth braking</label><strong id="brakeScore">100</strong><div class="bar"><i id="brakeBar" style="width:100%"></i></div><span id="harshBrake">0 harsh braking events</span></div>
+  <div class="card"><label>Speed steadiness</label><strong id="steadyScore">100</strong><div class="bar"><i id="steadyBar" style="width:100%"></i></div><span>Less speed swing = higher</span></div>
+  <div class="card"><label>Trip</label><strong id="trip">0.00 mi</strong><span id="tripMeta">0 min · top 0 mph</span></div>
+</div>
+
+<div class="controls">
+  <button id="startBtn">▶ Start drive</button>
+  <button class="secondary" id="endBtn">End &amp; save</button>
+</div>
+<div class="seg"><button id="mphBtn" class="active">MPH</button><button id="kmhBtn">KM/H</button></div>
+<p class="note">Parked? <button id="simBtn" class="secondary" style="flex:none;padding:7px 12px;font-size:13px;border-radius:999px">Simulate a drive</button> to preview scoring without moving. GPS speed only, nothing uploaded.</p>
+
+<div class="tip"><b>💡 Tip</b><p id="tip" style="margin:4px 0 0;color:var(--text)">Start a drive to get a tip based on your weakest factor.</p></div>
+
+<div class="hist">
+  <h2>Past sessions <span style="color:var(--muted);font-weight:400;font-size:13px">(this browser only)</span></h2>
+  <div id="history"><p>No saved sessions yet.</p></div>
+  <button class="secondary" id="clearBtn" style="margin-top:10px">Clear history</button>
+</div>
+</div>
+<script>
+(function(){
+  const $=id=>document.getElementById(id);
+  const KEY='faraday-eco-history';
+  let unit='mph',watchId=null,simTimer=null,simT=0;
+  let score=100,accelScore=100,brakeScore=100,steadyScore=100;
+  let harshA=0,harshB=0,tripM=0,topMps=0,startTime=0,lastSpeed=null,lastTime=0;
+  let speeds=[]; // recent speeds for steadiness
+  const toUnit=mps=>unit==='mph'?mps*2.23694:mps*3.6;
+  const fmt=(n,d=0)=>n.toLocaleString(undefined,{maximumFractionDigits:d,minimumFractionDigits:d});
+  function load(){try{return JSON.parse(localStorage.getItem(KEY)||'[]')}catch(e){return []}}
+  function renderHistory(){
+    const h=load(); const el=$('history');
+    if(!h.length){el.innerHTML='<p>No saved sessions yet.</p>';return}
+    el.innerHTML=h.slice(0,20).map(s=>`<div class="row"><div><b>${s.score}</b><br><span>${s.date} · ${s.dist} · ${s.mins} min</span></div><div style="text-align:right">${s.top}<br><span>top speed</span></div></div>`).join('');
+  }
+  function grade(s){return s>=90?'Excellent — smooth driving':s>=75?'Good — mostly smooth':s>=60?'Fair — a few harsh moments':'Needs work — harsh accel / braking';}
+  function render(){
+    $('scoreBig').textContent=Math.round(score);
+    $('ring').style.background=`conic-gradient(var(--green) ${score*3.6}deg, rgba(255,255,255,.12) 0deg)`;
+    $('grade').textContent=grade(score);
+    $('accelScore').textContent=Math.round(accelScore); $('accelBar').style.width=accelScore+'%'; $('harshAccel').textContent=harshA+' harsh accelerations';
+    $('brakeScore').textContent=Math.round(brakeScore); $('brakeBar').style.width=brakeScore+'%'; $('harshBrake').textContent=harshB+' harsh braking events';
+    $('steadyScore').textContent=Math.round(steadyScore); $('steadyBar').style.width=steadyScore+'%';
+    $('trip').textContent=fmt(unit==='mph'?tripM/1609.344:tripM/1000,2)+' '+(unit==='mph'?'mi':'km');
+    const mins=startTime?Math.floor((Date.now()-startTime)/60000):0;
+    $('tripMeta').textContent=mins+' min · top '+fmt(toUnit(topMps))+' '+unit;
+    let tip='Start a drive to get a tip based on your weakest factor.';
+    if(harshA>harshB&&harshA>0) tip='Ease into the accelerator — gentle, steady pressure saves energy and keeps the score up.';
+    else if(harshB>0) tip='Look ahead and lift off early instead of braking late — coasting beats hard braking.';
+    else if(steadyScore<80) tip='Hold a steadier speed where safe — big speed swings cost more than a smooth cruise.';
+    else if(tripM>0) tip='Nice and smooth — keep that steady pace and early lift-off.';
+    $('tip').textContent=tip;
+  }
+  function onSpeed(mps,now){
+    if(mps==null||!isFinite(mps)||mps<0) return;
+    if(mps>topMps) topMps=mps;
+    if(lastSpeed!=null&&lastTime&&now>lastTime){
+      const dt=(now-lastTime)/1000;
+      if(dt>0&&dt<10){
+        tripM+=mps*dt;
+        const a=(mps-lastSpeed)/dt;
+        if(a>2.5){harshA++;accelScore=Math.max(0,accelScore-6)}
+        if(a<-3.0){harshB++;brakeScore=Math.max(0,brakeScore-7)}
+        speeds.push(mps); if(speeds.length>30) speeds.shift();
+        if(speeds.length>=10){
+          const mean=speeds.reduce((x,y)=>x+y,0)/speeds.length;
+          const sd=Math.sqrt(speeds.reduce((x,y)=>x+(y-mean)*(y-mean),0)/speeds.length);
+          const cv=mean>2?sd/mean:0;
+          steadyScore=Math.max(0,Math.min(100,100-cv*120));
+        }
+        score=Math.round(accelScore*0.4+brakeScore*0.4+steadyScore*0.2);
+      }
+    }
+    lastSpeed=mps; lastTime=now; render();
+  }
+  function onPos(p){
+    $('status').textContent='GPS active · Driving — glanceable, keep eyes on the road.';
+    onSpeed(p.coords.speed,p.timestamp);
+  }
+  function onErr(e){$('status').textContent='GPS unavailable: '+(e.message||'permission denied')+' — try Simulate a drive, or allow Location and use HTTPS.'}
+  $('startBtn').onclick=()=>{
+    if(watchId!=null){navigator.geolocation.clearWatch(watchId);watchId=null;$('startBtn').textContent='▶ Start drive';$('status').textContent='Paused.';return}
+    if(!('geolocation' in navigator)){$('status').textContent='This browser does not support GPS. Use Simulate a drive to preview.';return}
+    if(!startTime) startTime=Date.now();
+    $('status').textContent='Waiting for GPS… allow Location when asked.';
+    watchId=navigator.geolocation.watchPosition(onPos,onErr,{enableHighAccuracy:true,maximumAge:1000,timeout:15000});
+    $('startBtn').textContent='⏸ Pause drive';
+  };
+  $('endBtn').onclick=()=>{
+    if(watchId!=null){navigator.geolocation.clearWatch(watchId);watchId=null}
+    if(simTimer){clearInterval(simTimer);simTimer=null;$('simBtn').textContent='Simulate a drive'}
+    const mins=startTime?Math.max(1,Math.round((Date.now()-startTime)/60000)):0;
+    const h=load();
+    h.unshift({score:Math.round(score),date:new Date().toLocaleString(),dist:fmt(unit==='mph'?tripM/1609.344:tripM/1000,2)+' '+(unit==='mph'?'mi':'km'),mins:mins,top:fmt(toUnit(topMps))+' '+unit});
+    localStorage.setItem(KEY,JSON.stringify(h.slice(0,50)));
+    $('status').textContent='Session saved to this browser only.';
+    renderHistory(); render();
+    $('startBtn').textContent='▶ Start drive';
+    // reset for next session, keep history
+    score=100;accelScore=100;brakeScore=100;steadyScore=100;harshA=0;harshB=0;tripM=0;topMps=0;startTime=0;lastSpeed=null;lastTime=0;speeds=[];render();
+  };
+  $('simBtn').onclick=()=>{
+    if(simTimer){clearInterval(simTimer);simTimer=null;$('simBtn').textContent='Simulate a drive';return}
+    if(!startTime) startTime=Date.now();
+    $('status').textContent='Simulated drive — not real GPS.';
+    $('simBtn').textContent='Stop simulation'; simT=0;
+    simTimer=setInterval(()=>{simT++;const mps=Math.max(0,11+9*Math.sin(simT/8)+3*Math.sin(simT/2.7));onSpeed(mps,Date.now())},1000);
+  };
+  $('mphBtn').onclick=()=>{unit='mph';$('mphBtn').classList.add('active');$('kmhBtn').classList.remove('active');render()};
+  $('kmhBtn').onclick=()=>{unit='kmh';$('kmhBtn').classList.add('active');$('mphBtn').classList.remove('active');render()};
+  $('clearBtn').onclick=()=>{localStorage.removeItem(KEY);renderHistory()};
+  renderHistory(); render();
+})();
+</script>
+</body>
+</html>

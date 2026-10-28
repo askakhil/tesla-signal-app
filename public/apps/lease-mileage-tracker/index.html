@@ -1,0 +1,246 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#0b1220">
+<title>Faraday — Lease / Mileage Tracker</title>
+<style>
+  :root{
+    --bg:#0b1220; --card:rgba(255,255,255,.08); --card2:rgba(255,255,255,.12);
+    --text:#f4f6fb; --muted:#a8b0c0; --blue:#4da3ff; --purple:#8b7bff;
+    --green:#34d399; --amber:#fbbf24; --red:#f87171; --cream:#f7ecd2;
+  }
+  *{box-sizing:border-box}
+  body{
+    margin:0; min-height:100vh; color:var(--text);
+    font-family:-apple-system,BlinkMacSystemFont,"SF Pro Text",Segoe UI,Roboto,Helvetica,Arial,sans-serif;
+    background:radial-gradient(1100px 500px at 50% -10%, #24365e 0%, var(--bg) 55%);
+    padding:18px 14px 32px; display:flex; flex-direction:column; align-items:center;
+  }
+  .wrap{width:min(560px,100%)}
+  header{display:flex; justify-content:space-between; align-items:flex-start; gap:12px}
+  header h1{font-size:19px; margin:0; letter-spacing:.01em}
+  header p{margin:4px 0 0; color:var(--muted); font-size:13px; line-height:1.5}
+  .badge{
+    flex:none; font-size:12px; font-weight:800; letter-spacing:.04em; text-transform:uppercase;
+    padding:9px 12px; border-radius:999px; color:#101010; text-align:center; line-height:1.2;
+    background:linear-gradient(180deg,#ffe9a3,#f59e0b);
+    box-shadow:0 8px 20px rgba(245,158,11,.35), inset 0 1px 0 rgba(255,255,255,.7);
+  }
+  .beta-note{
+    margin:14px 0 0; padding:12px 14px; border-radius:16px; font-size:13px; line-height:1.5;
+    background:rgba(251,191,36,.14); border:1px solid rgba(251,191,36,.45); color:#fde68a;
+  }
+  .card{
+    background:var(--card); border:1px solid rgba(255,255,255,.12); border-radius:24px;
+    padding:16px; margin-top:14px;
+    box-shadow:0 12px 28px rgba(0,0,0,.28), inset 0 1px 0 rgba(255,255,255,.15);
+  }
+  .card h2{font-size:15px; margin:0 0 12px}
+  label{display:block; color:var(--muted); font-size:12px; letter-spacing:.08em; text-transform:uppercase; margin:12px 0 6px}
+  label:first-child{margin-top:0}
+  input{
+    width:100%; padding:14px; border-radius:16px; border:1px solid rgba(255,255,255,.16);
+    background:rgba(255,255,255,.10); color:var(--text); font-size:17px; font-weight:700;
+  }
+  input:focus{outline:2px solid var(--blue); outline-offset:1px}
+  .grid{display:grid; grid-template-columns:1fr 1fr; gap:12px}
+  .grid .card{margin-top:0}
+  .big{font-size:34px; font-weight:800; line-height:1; font-variant-numeric:tabular-nums; margin-top:6px}
+  .big small{font-size:15px; color:var(--muted)}
+  .sub{color:var(--muted); font-size:13px; margin-top:6px; line-height:1.5}
+  .status{font-size:20px; font-weight:800; margin-top:6px}
+  .status.ok{color:var(--green)} .status.warn{color:var(--amber)} .status.over{color:var(--red)}
+  .bar{height:14px; border-radius:999px; background:rgba(255,255,255,.12); overflow:hidden; margin-top:10px}
+  .bar > div{height:100%; border-radius:999px; background:linear-gradient(90deg,var(--blue),var(--purple)); transition:width .4s ease}
+  .bar.over > div{background:linear-gradient(90deg,#f87171,#dc2626)}
+  .controls{display:flex; gap:10px; margin-top:14px}
+  button{
+    flex:1; border:0; border-radius:18px; padding:15px 10px; font-size:16px; font-weight:800; cursor:pointer;
+    color:#fff; background:linear-gradient(180deg,var(--blue),#2b6fd6);
+    box-shadow:0 10px 22px rgba(77,163,255,.3), inset 0 1px 0 rgba(255,255,255,.5);
+  }
+  button.secondary{background:rgba(255,255,255,.12); box-shadow:inset 0 1px 0 rgba(255,255,255,.2)}
+  button:active{transform:scale(.98); opacity:.9}
+  .note{color:var(--muted); font-size:12px; line-height:1.6; text-align:center; margin-top:16px}
+  .warn{color:var(--red); font-size:13px; margin-top:10px; line-height:1.5}
+  @media (prefers-reduced-motion:reduce){ *{transition:none !important} }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <div>
+      <h1>Faraday — Lease / Mileage Tracker</h1>
+      <p>Far a day · Browser only · No install</p>
+    </div>
+    <div class="badge" aria-label="Beta test badge">Beta — Test</div>
+  </header>
+
+  <div class="beta-note">
+    <strong>Beta — Test.</strong> This app is untested by the user until he tests it.
+    Treat every number below as a preview until you check it against your lease paperwork.
+  </div>
+
+  <section class="card" aria-label="Lease details">
+    <h2>Your lease — enter it once</h2>
+    <label for="startDate">Lease start date</label>
+    <input id="startDate" type="date">
+    <label for="endDate">Lease end date</label>
+    <input id="endDate" type="date">
+    <label for="startOdo">Odometer at lease start (miles)</label>
+    <input id="startOdo" type="number" inputmode="numeric" min="0" step="1" placeholder="e.g. 10">
+    <label for="allowance">Total miles allowed over the lease</label>
+    <input id="allowance" type="number" inputmode="numeric" min="1" step="1" placeholder="e.g. 36000">
+    <label for="currentOdo">Current odometer — enter it manually (miles)</label>
+    <input id="currentOdo" type="number" inputmode="numeric" min="0" step="1" placeholder="e.g. 12450">
+    <p class="sub">One main action: update the current odometer when you check it. Everything below recalculates instantly and is saved in this browser only.</p>
+    <div id="inputWarn" class="warn" hidden></div>
+  </section>
+
+  <section class="card" aria-label="Mileage summary">
+    <h2>At a glance</h2>
+    <div class="grid">
+      <div><label>Miles used</label><div class="big" id="used">—</div></div>
+      <div><label>Miles remaining</label><div class="big" id="remaining">—</div></div>
+      <div><label>Days remaining</label><div class="big" id="daysLeft">—</div></div>
+      <div><label>Daily budget left</label><div class="big" id="dailyBudget">—</div><div class="sub">miles / day, from now to lease end</div></div>
+    </div>
+    <div id="paceStatus" class="status">Enter your lease details to see your pace.</div>
+    <div class="sub" id="paceDetail"></div>
+    <label>Lease time used</label>
+    <div class="bar"><div id="timeBar" style="width:0%"></div></div>
+    <div class="sub" id="timeDetail"></div>
+    <label>Allowance used</label>
+    <div class="bar" id="milesBarWrap"><div id="milesBar" style="width:0%"></div></div>
+    <div class="sub" id="milesDetail"></div>
+  </section>
+
+  <section class="card" aria-label="Projection">
+    <h2>Projected end mileage</h2>
+    <div class="big" id="projected">—</div>
+    <div class="sub" id="projectedDetail"></div>
+    <div class="sub" id="paceNumbers"></div>
+    <p class="sub">Projection = your pace so far (miles per day since lease start) carried forward to lease end. It is a simple pace forecast, not a lease quote — it does not include overage charges, fees, or a buyout.</p>
+  </section>
+
+  <div class="controls">
+    <button id="saveBtn">Save in this browser</button>
+    <button class="secondary" id="clearBtn">Clear my data</button>
+  </div>
+
+  <p class="note">
+    Privacy: everything you enter stays in this browser's localStorage only.
+    Nothing is uploaded, shared, or sent anywhere — including your mileage figures.
+    Clear My Data removes it from this browser. If you clear browser data, this tracker resets.
+    Works in a phone browser mounted in any car, and in a Tesla browser.
+  </p>
+</div>
+
+<script>
+(function(){
+  const $ = id => document.getElementById(id);
+  const KEY = 'faraday-lease-mileage-v1';
+  const fields = ['startDate','endDate','startOdo','allowance','currentOdo'];
+  const fmt = n => Math.round(n).toLocaleString();
+  const fmt1 = n => n.toLocaleString(undefined,{maximumFractionDigits:1, minimumFractionDigits:1});
+  const dayMs = 86400000;
+
+  function read(){
+    const v = {};
+    fields.forEach(f => v[f] = $(f).value);
+    return v;
+  }
+  function save(){
+    try { localStorage.setItem(KEY, JSON.stringify(read())); } catch(e) {}
+  }
+  function load(){
+    try {
+      const v = JSON.parse(localStorage.getItem(KEY) || '{}');
+      fields.forEach(f => { if (v[f] !== undefined) $(f).value = v[f]; });
+    } catch(e) {}
+  }
+  function parseDate(s){
+    if (!s) return null;
+    const d = new Date(s + 'T12:00:00');
+    return isNaN(d) ? null : d;
+  }
+
+  function render(){
+    const v = read();
+    const start = parseDate(v.startDate), end = parseDate(v.endDate);
+    const startOdo = parseFloat(v.startOdo), allowance = parseFloat(v.allowance), current = parseFloat(v.currentOdo);
+    const warn = $('inputWarn');
+    warn.hidden = true; warn.textContent = '';
+
+    const missing = !start || !end || isNaN(startOdo) || isNaN(allowance) || isNaN(current);
+    if (missing){
+      ['used','remaining','daysLeft','dailyBudget','projected'].forEach(id => $(id).textContent = '—');
+      $('paceStatus').textContent = 'Enter your lease details to see your pace.';
+      $('paceStatus').className = 'status';
+      $('paceDetail').textContent = '';
+      $('timeDetail').textContent = ''; $('milesDetail').textContent = '';
+      $('projectedDetail').textContent = ''; $('paceNumbers').textContent = '';
+      $('timeBar').style.width = '0%'; $('milesBar').style.width = '0%';
+      return;
+    }
+    if (end <= start){ warn.hidden = false; warn.textContent = 'Lease end date must be after the start date.'; return; }
+    if (allowance <= 0){ warn.hidden = false; warn.textContent = 'Total allowed miles must be greater than 0.'; return; }
+    if (current < startOdo){ warn.hidden = false; warn.textContent = 'Current odometer is below the lease-start odometer — check the numbers you entered.'; }
+
+    const today = new Date(); today.setHours(12,0,0,0);
+    const totalDays = Math.max(1, Math.round((end - start) / dayMs));
+    const elapsedDays = Math.max(0, Math.min(totalDays, Math.round((today - start) / dayMs)));
+    const daysLeft = Math.max(0, Math.round((end - today) / dayMs));
+    const used = current - startOdo;
+    const remaining = allowance - used;
+    const timePct = (elapsedDays / totalDays) * 100;
+    const milesPct = Math.max(0, (used / allowance) * 100);
+    const pace = elapsedDays > 0 ? used / elapsedDays : 0;
+    const allowedPerDay = allowance / totalDays;
+    const projectedUsed = used + pace * daysLeft;
+    const projectedOdo = current + pace * daysLeft;
+    const overage = projectedUsed - allowance;
+
+    $('used').textContent = fmt(used);
+    $('remaining').textContent = fmt(remaining);
+    $('daysLeft').textContent = fmt(daysLeft);
+    $('dailyBudget').textContent = daysLeft > 0 ? fmt1(Math.max(0, remaining) / daysLeft) : '—';
+    $('timeBar').style.width = Math.min(100, timePct) + '%';
+    $('milesBar').style.width = Math.min(100, milesPct) + '%';
+    $('milesBarWrap').className = 'bar' + (milesPct > 100 ? ' over' : '');
+    $('timeDetail').textContent = `${fmt(elapsedDays)} of ${fmt(totalDays)} days elapsed (${fmt1(timePct)}% of lease time).`;
+    $('milesDetail').textContent = `${fmt1(milesPct)}% of your allowance used.`;
+    $('projected').textContent = fmt(projectedOdo) + ' mi';
+    $('projectedDetail').textContent = overage > 0
+      ? `That is ${fmt(overage)} miles over your ${fmt(allowance)}-mile allowance at this pace.`
+      : `That is ${fmt(allowance - projectedUsed)} miles under your ${fmt(allowance)}-mile allowance at this pace.`;
+    $('paceNumbers').textContent = `Your pace: ${fmt1(pace)} mi/day so far · Allowed pace: ${fmt1(allowedPerDay)} mi/day.`;
+
+    const st = $('paceStatus');
+    if (used > allowance){
+      st.textContent = 'Over allowance already'; st.className = 'status over';
+      $('paceDetail').textContent = `You are ${fmt(used - allowance)} miles over allowance with ${fmt(daysLeft)} days left.`;
+    } else if (overage > 0){
+      st.textContent = 'Ahead of pace — projected over'; st.className = 'status warn';
+      $('paceDetail').textContent = `At today's pace you would finish ${fmt(overage)} miles over. Slow to ${fmt1(Math.max(0, remaining) / Math.max(1, daysLeft))} mi/day or less to stay inside.`;
+    } else {
+      st.textContent = 'On pace'; st.className = 'status ok';
+      $('paceDetail').textContent = `At today's pace you stay inside your allowance.`;
+    }
+  }
+
+  fields.forEach(f => $(f).addEventListener('input', () => { save(); render(); }));
+  $('saveBtn').onclick = () => { save(); render(); $('saveBtn').textContent = 'Saved ✓'; setTimeout(() => $('saveBtn').textContent = 'Save in this browser', 1500); };
+  $('clearBtn').onclick = () => {
+    if (!confirm('Clear all lease and mileage data from this browser?')) return;
+    try { localStorage.removeItem(KEY); } catch(e) {}
+    fields.forEach(f => $(f).value = '');
+    render();
+  };
+  load(); render();
+})();
+</script>
+</body>
+</html>

@@ -1,0 +1,175 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#eef2ff">
+<title>Faraday — Break Timer</title>
+<style>
+  :root{--bg:#eef2ff;--card:rgba(255,255,255,.85);--ink:#111827;--muted:#6b7280;--blue:#2563eb;--purple:#7c3aed;--amber:#f59e0b;--green:#16a34a;--red:#dc2626}
+  *{box-sizing:border-box}
+  body{margin:0;font-family:-apple-system,BlinkMacSystemFont,"SF Pro Text",Segoe UI,Roboto,Helvetica,Arial,sans-serif;color:var(--ink);background:linear-gradient(180deg,#dbeafe 0%,#ede9fe 45%,#fef3c7 100%);min-height:100vh}
+  .wrap{max-width:560px;margin:0 auto;padding:22px 16px 32px}
+  header{display:flex;justify-content:space-between;align-items:flex-start;gap:12px}
+  h1{font-size:22px;margin:0} .tag{color:var(--muted);font-size:14px;margin:4px 0 0}
+  .beta{flex:none;text-align:center;background:linear-gradient(180deg,#fde68a,#f59e0b);color:#451a03;font-weight:800;font-size:13px;letter-spacing:.04em;padding:10px 12px;border-radius:16px;box-shadow:0 10px 22px rgba(245,158,11,.35),inset 0 1px 0 rgba(255,255,255,.7)}
+  .beta small{display:block;font-weight:600;font-size:11px;letter-spacing:0}
+  .card{background:var(--card);backdrop-filter:blur(12px);border:1px solid rgba(255,255,255,.9);border-radius:24px;padding:20px;box-shadow:0 12px 30px rgba(37,99,235,.12);margin:14px 0;text-align:center}
+  .pill{display:inline-block;padding:6px 12px;border-radius:999px;background:#dbeafe;color:#1e40af;font-weight:700;font-size:13px}
+  .pill.due{background:#fee2e2;color:#991b1b}
+  .pill.break{background:#dcfce7;color:#166534}
+  .count{font-size:64px;font-weight:900;letter-spacing:-.03em;line-height:1;margin:12px 0 4px;font-variant-numeric:tabular-nums}
+  .sub{color:var(--muted);font-size:14px;line-height:1.5}
+  .bar{height:12px;background:#e5e7eb;border-radius:999px;overflow:hidden;margin:16px 0 6px}
+  .bar i{display:block;height:100%;background:linear-gradient(90deg,var(--blue),var(--purple));border-radius:999px;transition:width .5s linear}
+  .grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin:14px 0}
+  .stat{background:var(--card);border:1px solid rgba(255,255,255,.9);border-radius:20px;padding:14px;box-shadow:0 8px 20px rgba(37,99,235,.08)}
+  .stat label{display:block;color:var(--muted);font-size:11px;letter-spacing:.08em;text-transform:uppercase}
+  .stat strong{display:block;font-size:24px;margin-top:4px;font-variant-numeric:tabular-nums}
+  button{width:100%;border:0;border-radius:18px;padding:16px 10px;font-size:17px;font-weight:800;cursor:pointer;color:#fff;background:linear-gradient(180deg,#3b82f6,#1d4ed8);box-shadow:0 10px 22px rgba(37,99,235,.3),inset 0 1px 0 rgba(255,255,255,.5);margin-top:10px}
+  button.secondary{background:rgba(17,24,39,.08);color:var(--ink);box-shadow:inset 0 1px 0 rgba(255,255,255,.6)}
+  button.danger{background:linear-gradient(180deg,#ef4444,#b91c1c)}
+  button:active{transform:scale(.98);opacity:.9}
+  .row{display:flex;gap:10px}.row button{flex:1}
+  .seg{display:flex;gap:6px;flex-wrap:wrap;justify-content:center;margin:12px 0}
+  .seg button{width:auto;flex:1 1 30%;padding:11px 6px;font-size:14px;background:rgba(17,24,39,.08);color:var(--ink);box-shadow:none;margin:0}
+  .seg button.active{background:#111827;color:#fff}
+  label.field{display:block;text-align:left;color:var(--muted);font-size:13px;margin:12px 0 4px}
+  input{width:100%;padding:13px;border:1px solid #d1d5db;border-radius:14px;font-size:16px}
+  .alert{display:none;background:#fee2e2;border:1px solid #fecaca;color:#991b1b;border-radius:20px;padding:16px;margin:14px 0;text-align:center;font-weight:700}
+  .alert.show{display:block;animation:pulse 1.2s ease-in-out infinite}
+  @keyframes pulse{0%,100%{transform:scale(1)}50%{transform:scale(1.02)}}
+  .note{color:var(--muted);font-size:12px;line-height:1.5;text-align:center;margin-top:14px}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <div><h1>Faraday — Break Timer</h1><p class="tag">Far a day · Long drives, safer stops · Browser only</p></div>
+    <div class="beta">BETA — TEST<small>Untested — pending<br>user test</small></div>
+  </header>
+
+  <p class="note" style="margin:6px 0 0;text-align:left"><strong>Beta — Test:</strong> this app is untested by the user until he tests it. Timers run in this browser only.</p>
+
+  <div class="card">
+    <span class="pill" id="phasePill">Ready to drive</span>
+    <div class="count" id="count">02:00:00</div>
+    <div class="sub" id="status">Set your drive interval, then tap Start drive.</div>
+    <div class="bar"><i id="progress" style="width:0%"></i></div>
+    <div class="sub" id="progressText">0% of drive interval</div>
+  </div>
+
+  <div class="alert" id="dueAlert">⏰ BREAK DUE — Pull over safely and take a break.</div>
+
+  <div class="card" style="text-align:left">
+    <strong>Drive interval — time until next break</strong>
+    <div class="seg" id="intervalSeg">
+      <button data-min="60">1 hr</button>
+      <button data-min="90">1.5 hr</button>
+      <button data-min="120" class="active">2 hr</button>
+      <button data-min="150">2.5 hr</button>
+      <button data-min="180">3 hr</button>
+    </div>
+    <label class="field" for="customMin">Custom interval (minutes)</label>
+    <input id="customMin" type="number" min="5" max="480" step="5" placeholder="e.g. 120">
+    <strong style="display:block;margin-top:16px">Break length</strong>
+    <div class="seg" id="breakSeg">
+      <button data-min="5">5 min</button>
+      <button data-min="10">10 min</button>
+      <button data-min="15" class="active">15 min</button>
+      <button data-min="20">20 min</button>
+      <button data-min="30">30 min</button>
+    </div>
+    <div class="row">
+      <button id="startBtn">▶ Start drive</button>
+      <button class="secondary" id="pauseBtn">⏸ Pause</button>
+    </div>
+    <button id="breakBtn" class="secondary">☕ Start break now</button>
+    <button id="resetBtn" class="secondary danger" style="color:#fff">Reset all</button>
+  </div>
+
+  <div class="grid">
+    <div class="stat"><label>Breaks taken</label><strong id="breaksTaken">0</strong></div>
+    <div class="stat"><label>Drive time today</label><strong id="driveTime">0:00</strong></div>
+  </div>
+
+  <p class="note">Works in a phone browser mounted in any car, and in a Tesla browser. Settings and counts are saved in this browser only (localStorage) — nothing is uploaded, no account, no database, no paid service. Glanceable by design: keep eyes on the road, pull over before using the screen. Sound/vibration alerts need the page open in the foreground.</p>
+</div>
+
+<script>
+(function(){
+  const $=id=>document.getElementById(id);
+  const LS_KEY='faraday-break-timer-v1';
+  let saved={}; try{saved=JSON.parse(localStorage.getItem(LS_KEY)||'{}')}catch(e){}
+  let driveMin=saved.driveMin||120, breakMin=saved.breakMin||15, breaksTaken=saved.breaksTaken||0;
+  let mode='ready'; // ready | driving | due | break
+  let remainingMs=driveMin*60000, totalMs=driveMin*60000, driveElapsedMs=0;
+  let lastTick=0, timer=null, audioCtx=null;
+
+  function fmt(ms){
+    ms=Math.max(0,Math.round(ms/1000)); const h=Math.floor(ms/3600), m=Math.floor(ms%3600/60), s=ms%60;
+    return h>0 ? h+':'+String(m).padStart(2,'0')+':'+String(s).padStart(2,'0') : m+':'+String(s).padStart(2,'0');
+  }
+  function save(){ try{localStorage.setItem(LS_KEY,JSON.stringify({driveMin,breakMin,breaksTaken}))}catch(e){} }
+  function beep(){
+    try{
+      audioCtx=audioCtx||new (window.AudioContext||window.webkitAudioContext)();
+      [0,0.4,0.8].forEach(t=>{const o=audioCtx.createOscillator(),g=audioCtx.createGain();o.connect(g);g.connect(audioCtx.destination);o.frequency.value=880;o.start(audioCtx.currentTime+t);o.stop(audioCtx.currentTime+t+0.25);});
+      if(navigator.vibrate) navigator.vibrate([400,200,400,200,400]);
+    }catch(e){}
+  }
+  function render(){
+    $('count').textContent=fmt(remainingMs);
+    $('breaksTaken').textContent=breaksTaken;
+    $('driveTime').textContent=fmt(driveElapsedMs);
+    const pct=totalMs?Math.min(100,Math.round((1-remainingMs/totalMs)*100)):0;
+    $('progress').style.width=pct+'%';
+    $('progressText').textContent=mode==='break' ? 'On break — drive timer restarts after break' : pct+'% of drive interval';
+    const pill=$('phasePill');
+    if(mode==='due'){pill.textContent='Break due';pill.className='pill due';}
+    else if(mode==='break'){pill.textContent='On break';pill.className='pill break';}
+    else if(mode==='driving'){pill.textContent='Driving';pill.className='pill';}
+    else {pill.textContent='Ready to drive';pill.className='pill';}
+    $('dueAlert').classList.toggle('show',mode==='due');
+    $('startBtn').textContent=mode==='break' ? '▶ Resume drive after break' : (mode==='driving' ? 'Driving…' : '▶ Start drive');
+  }
+  function tick(){
+    const now=Date.now(), dt=now-lastTick; lastTick=now;
+    if(mode==='driving') driveElapsedMs+=dt;
+    remainingMs-=dt;
+    if(remainingMs<=0){
+      remainingMs=0; clearInterval(timer); timer=null;
+      if(mode==='driving'){mode='due'; $('status').textContent='Break due — pull over safely, then start your break.'; beep();}
+      else if(mode==='break'){mode='ready'; breaksTaken++; save(); $('status').textContent='Break done — tap Start drive for the next interval.'; beep(); remainingMs=driveMin*60000; totalMs=remainingMs;}
+    }
+    render();
+  }
+  function startTimer(){ if(timer) return; lastTick=Date.now(); timer=setInterval(tick,500); }
+  $('startBtn').onclick=()=>{
+    if(mode==='due'){ $('status').textContent='Start a break first — you are due.'; return; }
+    if(mode==='break'){ // end break early, resume drive
+      clearInterval(timer); timer=null; breaksTaken++; save(); mode='ready'; remainingMs=driveMin*60000; totalMs=remainingMs;
+    }
+    if(mode==='ready'){ remainingMs=driveMin*60000; totalMs=remainingMs; }
+    mode='driving'; $('status').textContent='Driving — countdown to your next break.'; startTimer(); render();
+  };
+  $('pauseBtn').onclick=()=>{ clearInterval(timer); timer=null; if(mode==='driving') mode='ready'; $('status').textContent='Paused. Tap Start drive to resume a fresh interval.'; render(); };
+  $('breakBtn').onclick=()=>{
+    clearInterval(timer); timer=null; mode='break'; remainingMs=breakMin*60000; totalMs=remainingMs;
+    $('status').textContent='On break — relax. Drive timer restarts when the break ends.'; startTimer(); render();
+  };
+  $('resetBtn').onclick=()=>{ clearInterval(timer); timer=null; mode='ready'; breaksTaken=0; driveElapsedMs=0; remainingMs=driveMin*60000; totalMs=remainingMs; save(); $('status').textContent='Reset. Set your interval, then tap Start drive.'; render(); };
+  document.querySelectorAll('#intervalSeg button').forEach(b=>b.onclick=()=>{
+    document.querySelectorAll('#intervalSeg button').forEach(x=>x.classList.remove('active')); b.classList.add('active');
+    driveMin=+b.dataset.min; $('customMin').value=''; if(mode==='ready'){remainingMs=driveMin*60000; totalMs=remainingMs;} save(); render();
+  });
+  document.querySelectorAll('#breakSeg button').forEach(b=>b.onclick=()=>{
+    document.querySelectorAll('#breakSeg button').forEach(x=>x.classList.remove('active')); b.classList.add('active');
+    breakMin=+b.dataset.min; save();
+  });
+  $('customMin').onchange=()=>{ const v=+ $('customMin').value; if(v>=5&&v<=480){driveMin=v; document.querySelectorAll('#intervalSeg button').forEach(x=>x.classList.remove('active')); if(mode==='ready'){remainingMs=driveMin*60000; totalMs=remainingMs;} save(); render();} };
+  render(); save();
+})();
+</script>
+</body>
+</html>
